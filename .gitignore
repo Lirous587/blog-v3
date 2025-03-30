@@ -1,0 +1,9 @@
+.idea/
+.vscode/
+bin
+output/
+*.exe
+/tmp
+logs
+docs
+_legacy
