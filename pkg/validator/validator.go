@@ -53,3 +53,5 @@ func toSnakeCase(str string) string {
 }
 
 var TranslateError = i18n.TranslateError
+
+var GetTranslateLang = i18n.GetTranslateLang

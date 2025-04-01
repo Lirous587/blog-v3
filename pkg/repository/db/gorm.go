@@ -11,6 +11,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 var db *gorm.DB
@@ -46,6 +47,10 @@ func Init(cfg *config.DBConfig) error {
 
 	gormConfig := &gorm.Config{
 		Logger: logger.Default.LogMode(getLogLevel(cfg.LogLevel)),
+		// 添加额外配置
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true, // 使用单数表名
+		},
 	}
 
 	// 建立连接
