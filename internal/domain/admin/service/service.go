@@ -118,10 +118,9 @@ func (s *service) Auth(email, password string) (res model.LoginRes, err error) {
 func (s *service) RefreshToken(payload *model.JwtPayload, refreshToken string) (res model.RefreshTokenRes, err error) {
 	if err := s.repo.ValidateRefreshToken(payload, refreshToken); err != nil {
 		if errors.Is(err, redis.Nil) {
-			res.Code = response.CodeAuthFailed
+			res.Code = response.CodeRefreshInvalid
 			return res, errors.WithStack(err)
 		}
-		res.Code = response.CodeRefreshInvalid
 		return res, errors.WithStack(err)
 	}
 
