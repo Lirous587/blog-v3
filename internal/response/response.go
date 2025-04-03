@@ -2,6 +2,7 @@ package response
 
 import (
 	"blog/pkg/validator"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -24,16 +25,18 @@ func Success(ctx *gin.Context, data ...any) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func ClientError(ctx *gin.Context, code code, err error) {
+// Error 宽松错误处理 - 接受普通error和错误码
+func Error(ctx *gin.Context, code code, err error) {
 	res := response{
 		Code: code,
 	}
-
-	msg, ok := clientErrCodeMsgMap[code]
+	fmt.Println(code)
+	msg, ok := errCodeMsgMap[code]
 	if ok {
 		res.Message = msg
 	} else {
-		res.Message = "未知客户端错误"
+		res.Code = codeUnKnowError
+		res.Message = "未知错误"
 	}
 
 	if code == CodeParamInvalid {
@@ -48,16 +51,26 @@ func ClientError(ctx *gin.Context, code code, err error) {
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
 }
 
-func ServerError(ctx *gin.Context, code code, err error) {
+func ErrorStrict(ctx *gin.Context, appErr *AppError) {
 	res := response{
-		Code: code,
+		Code: appErr.Code,
 	}
-	msg, ok := serverErrCodeMsgMap[code]
+	msg, ok := errCodeMsgMap[appErr.Code]
 	if ok {
 		res.Message = msg
 	} else {
-		res.Message = "未知服务端错误"
+		res.Code = codeUnKnowError
+		res.Message = "未知错误"
 	}
-	ctx.Error(err)
-	ctx.AbortWithStatusJSON(500, res)
+
+	if appErr.Code == CodeParamInvalid {
+		lang := validator.GetTranslateLang(ctx)
+		transErr := validator.TranslateError(appErr.Err, lang)
+		res.Data = transErr.Error()
+	}
+
+	if appErr.Err != nil {
+		ctx.Error(appErr.Err)
+	}
+	ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
 }
