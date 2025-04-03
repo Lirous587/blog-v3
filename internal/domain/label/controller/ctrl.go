@@ -23,12 +23,12 @@ func NewController(service service.Service) Controller {
 func (c *controller) Create(ctx *gin.Context) {
 	req := new(model.CreateReq)
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.ClientError(ctx, response.CodeParamInvalid, err)
+		response.Error(ctx, response.CodeParamInvalid, err)
 		return
 	}
 
 	if err := c.server.Create(req); err != nil {
-		response.ServerError(ctx, response.CodeServerError, err)
+		response.Error(ctx, response.CodeServerError, err)
 		return
 	}
 	response.Success(ctx)

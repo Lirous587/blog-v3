@@ -1,7 +1,6 @@
 package model
 
 import (
-	"blog/internal/response"
 	"gorm.io/gorm"
 	"time"
 )
@@ -18,7 +17,6 @@ type CreateReq struct {
 }
 
 type CreateRes struct {
-	Code response.Code `json:"-"`
 }
 
 type UpdateReq struct {
@@ -28,7 +26,6 @@ type UpdateReq struct {
 }
 
 type UpdateRes struct {
-	Code response.Code `json:"-"`
 }
 
 type DeleteReq struct {
@@ -36,12 +33,10 @@ type DeleteReq struct {
 }
 
 type DeleteRes struct {
-	Code response.Code `json:"-"`
 }
 type ListReq struct {
-	Page uint          `form:"page" binding:"required"`
-	Size uint          `form:"size" binding:"required,max=15"`
-	Code response.Code `json:"-"`
+	Page uint `form:"page" binding:"required"`
+	Size uint `form:"size" binding:"required,max=15"`
 }
 
 type LabelItem struct {
