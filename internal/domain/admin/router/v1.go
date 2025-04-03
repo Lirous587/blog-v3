@@ -9,8 +9,10 @@ import (
 func RegisterV1(r *gin.RouterGroup, adminCtrl controller.Controller) error {
 	g := r.Group("/v1/admin")
 	{
-		g.POST("/register", adminCtrl.Register)
+		g.GET("/ifInit", adminCtrl.IfInit)
+		g.POST("/init", adminCtrl.Init)
 		g.POST("/login", adminCtrl.Login)
+		g.POST("/refresh_token", adminCtrl.RefreshToken)
 	}
 	return nil
 }

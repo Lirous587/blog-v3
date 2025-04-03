@@ -39,23 +39,33 @@ func GenToken[T any](data *JWTTokenParams) (string, error) {
 	return token.SignedString(data.Secret)
 }
 
-func ParseToken[T any](tokenString string, secret []byte) (myClaims *MyClaims[T], needRefresh bool, err error) {
+var (
+	ErrTokenExpired = errors.New("token已过期")
+	ErrInvalidToken = errors.New("无效的token")
+	// ErrTokenNotValidYet     = errors.New("token尚未生效")
+	// ErrTokenMalformed       = errors.New("token格式错误")
+	// ErrTokenInvalidIssuer   = errors.New("token颁发者无效")
+	// ErrTokenInvalidAudience = errors.New("token接收者无效")
+)
+
+func ParseToken[T any](tokenString string, secret []byte) (myClaims *MyClaims[T], err error) {
 	token, err := jwt.ParseWithClaims(tokenString, &MyClaims[T]{}, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
 
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			if claims, ok := token.Claims.(*MyClaims[T]); ok {
-				return claims, true, nil
-			}
+		// 对于 JWT v5，直接判断错误类型
+		switch {
+		case errors.Is(err, jwt.ErrTokenExpired):
+			return nil, ErrTokenExpired
+		default:
+			return nil, ErrInvalidToken
 		}
-		return nil, false, err
 	}
 
-	if claims, ok := token.Claims.(*MyClaims[T]); ok {
-		return claims, false, nil
+	if claims, ok := token.Claims.(*MyClaims[T]); ok && token.Valid {
+		return claims, nil
 	}
 
-	return nil, false, errors.New("invalid token")
+	return nil, ErrInvalidToken
 }

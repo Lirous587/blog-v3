@@ -42,7 +42,9 @@ func ClientError(ctx *gin.Context, code code, err error) {
 		res.Data = transErr.Error()
 	}
 
-	ctx.Error(err)
+	if err != nil {
+		ctx.Error(err)
+	}
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
 }
 

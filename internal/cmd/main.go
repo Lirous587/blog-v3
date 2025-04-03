@@ -4,6 +4,8 @@ import (
 	"blog/internal/domain/admin"
 	"blog/internal/middleware"
 	"blog/pkg/httpserver"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Main() {
@@ -15,10 +17,21 @@ func Main() {
 	api := r.Group("/api")
 	api.Use(middleware.ErrorHandler())
 
-	// 创建admin路由
-	if err := admin.InitV1(api); err != nil {
+	adminAuth, err := middleware.InitAdminAuth()
+	if err != nil {
 		panic(err)
 	}
+
+	// 创建admin路由
+	if err = admin.InitV1(api); err != nil {
+		panic(err)
+	}
+
+	api.GET("/auth", adminAuth.Validate(), func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{
+			"msg": "认证成功",
+		})
+	})
 
 	s.Run()
 }

@@ -1,46 +1,76 @@
 package middleware
 
-// import (
-// 	"errors"
-// 	"github.com/gin-gonic/gin"
-// 	"net/http"
-// 	"strings"
-// )
+import (
+	"blog/internal/domain/admin/model"
+	"blog/internal/response"
+	"blog/pkg/jwt"
+	"errors"
+	"strings"
 
-// const (
-// 	needLogin        = "需要登录"
-// 	needRefreshToken = "需要refreshToken"
-// )
+	"github.com/gin-gonic/gin"
+)
 
-// func validateTokenFormat(c *gin.Context) (token string, err error) {
-// 	authHeader := c.Request.Header.Get("Authorization")
-// 	if authHeader == "" {
-// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-// 			"msg": "token为空",
-// 		})
-// 		err = errors.New("token为空")
-// 		return
-// 	}
-// 	parts := strings.SplitN(authHeader, " ", 2)
-// 	if !(len(parts) == 2 && parts[0] == "Bearer") {
-// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-// 			"msg": "token格式错误",
-// 		})
-// 		err = errors.New("token格式错误")
-// 		return
-// 	}
-// 	token = parts[1]
-// 	return
-// }
+const (
+	authHeaderKey = "Authorization"
+	bearerPrefix  = "Bearer "
+)
 
-// func validateRefreshTokenFormat(c *gin.Context) (refreshToken string, err error) {
-// 	refreshToken = c.Request.Header.Get("Refresh-Token")
-// 	if refreshToken == "" {
-// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-// 			"msg": needRefreshToken,
-// 		})
-// 		err = errors.New(needRefreshToken)
-// 		return
-// 	}
-// 	return
-// }
+// 解析 Authorization 头部的 Token
+func parseTokenFromHeader(c *gin.Context) (string, error) {
+	authHeader := c.GetHeader(authHeaderKey)
+	if authHeader == "" {
+		return "", errors.New("token为空")
+	}
+
+	if !strings.HasPrefix(authHeader, bearerPrefix) {
+		return "", errors.New("token格式错误")
+	}
+
+	return strings.TrimPrefix(authHeader, bearerPrefix), nil
+}
+
+type Auth interface {
+	Validate() gin.HandlerFunc
+}
+
+type adminAuth struct {
+	secret []byte
+}
+
+// NewAdminAuthMiddleware 创建管理员认证中间件
+func NewAdminAuth(secret []byte) Auth {
+	return &adminAuth{
+		secret: secret,
+	}
+}
+
+// Validate 验证管理员 Token
+func (auth *adminAuth) Validate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 1. 从请求头解析 Token
+		tokenStr, err := parseTokenFromHeader(c)
+		if err != nil {
+			response.ClientError(c, response.CodeTokenInvalid, err)
+			return
+		}
+
+		// 2. 解析 Token
+		secret := auth.secret
+		claims, err := jwt.ParseToken[model.JwtPayload](tokenStr, secret)
+		if err != nil {
+			switch err {
+			case jwt.ErrTokenExpired:
+				response.ClientError(c, response.CodeTokenExpired, err)
+				break
+			default:
+				response.ClientError(c, response.CodeTokenInvalid, err)
+			}
+
+			return
+		}
+
+		// 3. 将用户 ID 存入上下文
+		c.Set("admin_id", claims.PayLoad.ID)
+		c.Next()
+	}
+}
