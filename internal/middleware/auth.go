@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"blog/internal/domain/admin/model"
-	"blog/internal/response"
 	"blog/pkg/jwt"
+	"blog/pkg/response"
 	"errors"
 	"strings"
 
@@ -37,7 +37,6 @@ type adminAuth struct {
 	secret []byte
 }
 
-// NewAdminAuthMiddleware 创建管理员认证中间件
 func NewAdminAuth(secret []byte) Auth {
 	return &adminAuth{
 		secret: secret,
@@ -50,7 +49,7 @@ func (auth *adminAuth) Validate() gin.HandlerFunc {
 		// 1. 从请求头解析 Token
 		tokenStr, err := parseTokenFromHeader(c)
 		if err != nil {
-			response.ClientError(c, response.CodeTokenInvalid, err)
+			response.Error(c, response.CodeTokenInvalid, err)
 			return
 		}
 
@@ -58,12 +57,12 @@ func (auth *adminAuth) Validate() gin.HandlerFunc {
 		secret := auth.secret
 		claims, err := jwt.ParseToken[model.JwtPayload](tokenStr, secret)
 		if err != nil {
-			switch err {
-			case jwt.ErrTokenExpired:
-				response.ClientError(c, response.CodeTokenExpired, err)
+			switch {
+			case errors.Is(err, jwt.ErrTokenExpired):
+				response.Error(c, response.CodeTokenExpired, err)
 				break
 			default:
-				response.ClientError(c, response.CodeTokenInvalid, err)
+				response.Error(c, response.CodeTokenInvalid, err)
 			}
 
 			return

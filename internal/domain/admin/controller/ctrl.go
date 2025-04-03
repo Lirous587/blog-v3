@@ -3,8 +3,7 @@ package controller
 import (
 	"blog/internal/domain/admin/model"
 	"blog/internal/domain/admin/service"
-	"blog/internal/response"
-
+	"blog/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,25 +27,26 @@ func NewController(service service.Service) Controller {
 func (c *controller) IfInit(ctx *gin.Context) {
 	have, err := c.server.IfInit()
 	if err != nil {
-		response.ServerError(ctx, response.CodeServerError, err)
+		response.Error(ctx, response.CodeServerError, err)
 		return
 	}
 	if have {
-		response.ServerError(ctx, response.CodeAdminExist, nil)
-	} else {
-		response.Success(ctx)
+		response.Error(ctx, response.CodeAdminExist, nil)
+		return
 	}
+
+	response.Success(ctx)
 }
 
 func (c *controller) Init(ctx *gin.Context) {
 	req := new(model.InitReq)
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.ClientError(ctx, response.CodeParamInvalid, err)
+		response.Error(ctx, response.CodeParamInvalid, err)
 		return
 	}
-	res, err := c.server.Init(req)
-	if err != nil {
-		response.ServerError(ctx, res.Code, err)
+	appErr := c.server.Init(req)
+	if appErr != nil {
+		response.ErrorStrict(ctx, appErr)
 		return
 	}
 	response.Success(ctx)
@@ -55,13 +55,13 @@ func (c *controller) Init(ctx *gin.Context) {
 func (c *controller) Login(ctx *gin.Context) {
 	req := new(model.LoginReq)
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.ClientError(ctx, response.CodeParamInvalid, err)
+		response.Error(ctx, response.CodeParamInvalid, err)
 		return
 	}
 
-	res, err := c.server.Auth(req.Email, req.Password)
-	if err != nil {
-		response.ClientError(ctx, response.CodeAuthFailed, err)
+	res, appErr := c.server.Auth(req.Email, req.Password)
+	if appErr != nil {
+		response.ErrorStrict(ctx, appErr)
 		return
 	}
 
@@ -71,21 +71,21 @@ func (c *controller) Login(ctx *gin.Context) {
 func (c *controller) RefreshToken(ctx *gin.Context) {
 	refreshToken := ctx.GetHeader("refresh-token")
 	if refreshToken == "" {
-		response.ClientError(ctx, response.CodeAuthFailed, nil)
+		response.Error(ctx, response.CodeAuthFailed, nil)
 		return
 	}
 
 	req := new(model.RefreshTokenReq)
-
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.ClientError(ctx, response.CodeParamInvalid, err)
+		response.Error(ctx, response.CodeParamInvalid, err)
 		return
 	}
 
-	res, err := c.server.RefreshToken(req, refreshToken)
-	if err != nil {
-		response.ClientError(ctx, res.Code, err)
+	res, appErr := c.server.RefreshToken(req, refreshToken)
+	if appErr != nil {
+		response.ErrorStrict(ctx, appErr)
 		return
 	}
+
 	response.Success(ctx, res)
 }

@@ -3,7 +3,7 @@ package controller
 import (
 	"blog/internal/domain/label/model"
 	"blog/internal/domain/label/service"
-	"blog/internal/response"
+	"blog/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 

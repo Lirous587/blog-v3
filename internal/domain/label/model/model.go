@@ -16,24 +16,16 @@ type CreateReq struct {
 	Introduction *string `json:"introduction" binding:"max=60"`
 }
 
-type CreateRes struct {
-}
-
 type UpdateReq struct {
 	ID           uint    `uri:"id" binding:"required"`
 	Name         string  `json:"name" binding:"required,max=30"`
 	Introduction *string `json:"introduction" binding:"max=60"`
 }
 
-type UpdateRes struct {
-}
-
 type DeleteReq struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type DeleteRes struct {
-}
 type ListReq struct {
 	Page uint `form:"page" binding:"required"`
 	Size uint `form:"size" binding:"required,max=15"`

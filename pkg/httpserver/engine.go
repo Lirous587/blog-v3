@@ -34,6 +34,8 @@ func New(port int) *Server {
 	r := gin.New()
 	r.Use(logger.GinLogger(), logger.GinRecovery(true))
 
+	r.Use(ErrorHandler())
+
 	// 配置CORS中间件
 	setupCORS(r)
 

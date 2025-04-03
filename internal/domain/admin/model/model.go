@@ -1,7 +1,6 @@
 package model
 
 import (
-	"blog/internal/response"
 	"gorm.io/gorm"
 )
 
@@ -14,10 +13,6 @@ type Admin struct {
 type InitReq struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,max=70"`
-}
-
-type InitRes struct {
-	Code response.Code `json:"code"`
 }
 
 type LoginReq struct {
@@ -38,6 +33,5 @@ type JwtPayload struct {
 type RefreshTokenReq = JwtPayload
 
 type RefreshTokenRes struct {
-	Token string        `json:"token"`
-	Code  response.Code `json:"-"`
+	Token string `json:"token"`
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/google/wire"
 )
 
-// InitializeAdminAPI 初始化Admin模块的API
 func InitV1(r *gin.RouterGroup) error {
 	wire.Build(
 		router.RegisterV1,

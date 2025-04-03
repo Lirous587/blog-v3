@@ -3,9 +3,9 @@ package service
 import (
 	"blog/internal/domain/admin/model"
 	"blog/internal/domain/admin/repository"
-	"blog/internal/response"
 	"blog/pkg/config"
 	"blog/pkg/jwt"
+	"blog/pkg/response"
 	"blog/utils"
 	"github.com/redis/go-redis/v9"
 	"time"
@@ -16,9 +16,9 @@ import (
 
 type Service interface {
 	IfInit() (bool, error)
-	Init(req *model.InitReq) (res model.InitRes, err error)
-	Auth(email, password string) (res model.LoginRes, err error)
-	RefreshToken(payload *model.JwtPayload, refreshToken string) (res model.RefreshTokenRes, err error)
+	Init(req *model.InitReq) *response.AppError
+	Auth(email, password string) (res *model.LoginRes, appErr *response.AppError)
+	RefreshToken(payload *model.JwtPayload, refreshToken string) (res *model.RefreshTokenRes, appErr *response.AppError)
 }
 
 type service struct {
@@ -33,23 +33,20 @@ func (s *service) IfInit() (bool, error) {
 	return s.repo.HaveOne()
 }
 
-func (s *service) Init(req *model.InitReq) (res model.InitRes, err error) {
+func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
 	have, err := s.IfInit()
 	if err != nil {
-		res.Code = response.CodeDatabaseError
-		return res, errors.WithStack(err)
+		return response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
 	}
 
 	if have {
-		res.Code = response.CodeAdminExist
-		return res, errors.New("管理员已初始化")
+		return response.NewAppError(response.CodeAdminExist, errors.New("管理员已初始化"))
 	}
 
 	hashPassword, err := utils.EncryptPassword(req.Password)
 
 	if err != nil {
-		res.Code = response.CodeServerError
-		return res, errors.WithStack(err)
+		return response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
 	newAdmin := &model.Admin{
@@ -57,10 +54,14 @@ func (s *service) Init(req *model.InitReq) (res model.InitRes, err error) {
 		HashPassword: hashPassword,
 	}
 
-	return res, errors.WithStack(s.repo.Create(newAdmin))
+	if err = s.repo.Create(newAdmin); err != nil {
+		return response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
+	}
+
+	return
 }
 
-func (s *service) genToken(payload *model.JwtPayload) (string, error) {
+func (s *service) genToken(payload *model.JwtPayload) (token string, err error) {
 	jwtCfg := config.Cfg.Auth.JWT
 
 	JWTTokenParams := jwt.JWTTokenParams{
@@ -69,27 +70,26 @@ func (s *service) genToken(payload *model.JwtPayload) (string, error) {
 		Secret:   []byte(jwtCfg.Secret),
 	}
 
-	token, err := jwt.GenToken[model.JwtPayload](&JWTTokenParams)
+	token, err = jwt.GenToken[model.JwtPayload](&JWTTokenParams)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
-
-	return token, err
+	return
 }
 
-func (s *service) Auth(email, password string) (res model.LoginRes, err error) {
+func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *response.AppError) {
 	admin, err := s.repo.FindByEmail(email)
 	if err != nil {
-		return res, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
 	}
 
 	if admin == nil {
-		return res, errors.New("身份验证失败")
+		return nil, response.NewAppError(response.CodeAuthFailed, errors.WithStack(err))
 	}
 
 	err = bcrypt.CompareHashAndPassword(admin.HashPassword, []byte(password))
 	if err != nil {
-		return res, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
 	payload := &model.JwtPayload{
@@ -98,37 +98,38 @@ func (s *service) Auth(email, password string) (res model.LoginRes, err error) {
 
 	token, err := s.genToken(payload)
 	if err != nil {
-		return res, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
 	refreshToken, err := s.repo.GenRefreshToken(payload)
 	if err != nil {
-		return res, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
 	}
 
-	res = model.LoginRes{
+	res = &model.LoginRes{
 		Payload:      *payload,
 		Token:        token,
 		RefreshToken: refreshToken,
 	}
 
-	return res, nil
+	return
 }
 
-func (s *service) RefreshToken(payload *model.JwtPayload, refreshToken string) (res model.RefreshTokenRes, err error) {
+func (s *service) RefreshToken(payload *model.JwtPayload, refreshToken string) (res *model.RefreshTokenRes, appErr *response.AppError) {
 	if err := s.repo.ValidateRefreshToken(payload, refreshToken); err != nil {
 		if errors.Is(err, redis.Nil) {
-			res.Code = response.CodeRefreshInvalid
-			return res, errors.WithStack(err)
+			return nil, response.NewAppError(response.CodeRefreshInvalid, errors.WithStack(err))
 		}
-		return res, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeDatabaseError, err)
 	}
 
 	newToken, err := s.genToken(payload)
 	if err != nil {
-		return res, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
-	res.Token = newToken
+	res = &model.RefreshTokenRes{
+		Token: newToken,
+	}
 	return
 }
