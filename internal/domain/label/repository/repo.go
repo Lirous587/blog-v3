@@ -32,7 +32,7 @@ func NewRepository(db *gorm.DB, client *redis.Client) Repository {
 func (r *repository) FindByName(name string) (*model.Label, error) {
 	label := new(model.Label)
 	if err := r.db.Where("name = ?", name).First(label).Error; err != nil {
-		return nil, err
+		return label, err
 	}
 	return label, nil
 }

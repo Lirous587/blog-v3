@@ -6,7 +6,7 @@ import (
 
 type Label struct {
 	gorm.Model
-	Name         string  `gorm:"uniqueIndex;not null;size:30"`
+	Name         string  `gorm:"not null;size:30"`
 	Introduction *string `gorm:"size:60"`
 }
 

@@ -24,10 +24,14 @@ func NewService(repo repository.Repository) Service {
 
 func (s *service) Create(req *model.CreateReq) (err error) {
 	// 先查是否有同名的记录
-	_, err = s.repo.FindByName(req.Name)
+	label, err := s.repo.FindByName(req.Name)
 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.WithStack(err)
+	}
+
+	if label.Name == req.Name {
+		return errors.New("label名重复")
 	}
 
 	if err = s.repo.Create(req); err != nil {
