@@ -2,7 +2,6 @@ package model
 
 import (
 	"gorm.io/gorm"
-	"time"
 )
 
 type Label struct {
@@ -13,31 +12,28 @@ type Label struct {
 
 type CreateReq struct {
 	Name         string  `json:"name" binding:"required,max=30"`
-	Introduction *string `json:"introduction" binding:"max=60"`
+	Introduction *string `json:"introduction" binding:"omitempty,max=60"`
 }
 
 type UpdateReq struct {
-	ID           uint    `uri:"id" binding:"required"`
 	Name         string  `json:"name" binding:"required,max=30"`
-	Introduction *string `json:"introduction" binding:"max=60"`
-}
-
-type DeleteReq struct {
-	ID uint `uri:"id" binding:"required"`
+	Introduction *string `json:"introduction" binding:"omitempty,max=60"`
 }
 
 type ListReq struct {
-	Page uint `form:"page" binding:"required"`
-	Size uint `form:"size" binding:"required,max=15"`
+	Page     int    `form:"page" binding:"required,min=1"`
+	PageSize int    `form:"page_size" binding:"required,max=15"`
+	Keyword  string `form:"keyword"`
 }
 
-type LabelItem struct {
-	ID           uint      `json:"id"`
-	Name         string    `json:"name"`
-	Introduction string    `json:"introduction"`
-	CreatedTime  time.Time `json:"created_time"`
+type LabelDTO struct {
+	ID           uint    `json:"id"`
+	Name         string  `json:"name"`
+	Introduction *string `json:"introduction,omitempty"`
+	CreatedAt    string  `json:"create_at"`
 }
+
 type ListRes struct {
-	List  []LabelItem `json:"list"`
-	Pages uint        `json:"pages"`
+	List  []LabelDTO `json:"list"`
+	Pages int        `json:"pages"`
 }

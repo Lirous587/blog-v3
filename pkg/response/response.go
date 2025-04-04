@@ -2,7 +2,6 @@ package response
 
 import (
 	"blog/pkg/validator"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,6 @@ func Error(ctx *gin.Context, code code, err error) {
 	res := response{
 		Code: code,
 	}
-	fmt.Println(code)
 	msg, ok := errCodeMsgMap[code]
 	if ok {
 		res.Message = msg

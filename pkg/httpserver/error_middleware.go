@@ -31,10 +31,9 @@ func printBusinessStack(err error) {
 
 	// 错误消息
 	if len(lines) > 0 {
-		log.Printf("\n\n业务逻辑错误: %s", lines[0])
+		log.Printf("\n\n")
+		log.Printf("业务逻辑错误: %s\n", lines[0])
 	}
-
-	log.Println("业务调用栈:")
 
 	// 记录已打印的栈帧数量
 	framePrinted := 0

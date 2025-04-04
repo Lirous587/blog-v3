@@ -4,6 +4,7 @@ import (
 	"blog/internal/domain/label/model"
 	"blog/internal/domain/label/service"
 	"blog/pkg/response"
+	"blog/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +13,10 @@ type Controller interface {
 	Delete(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	List(ctx *gin.Context)
+}
+
+type controller struct {
+	server service.Service
 }
 
 func NewController(service service.Service) Controller {
@@ -34,21 +39,54 @@ func (c *controller) Create(ctx *gin.Context) {
 	response.Success(ctx)
 }
 
-func (c *controller) Delete(ctx *gin.Context) {
-	//TODO implement me
-	panic("implement me")
+func (c *controller) Update(ctx *gin.Context) {
+	id, err := utils.GetID(ctx)
+	if err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+
+	req := new(model.UpdateReq)
+	if err := ctx.ShouldBindJSON(req); err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+
+	if err := c.server.Update(id, req); err != nil {
+		response.Error(ctx, response.CodeServerError, err)
+		return
+	}
+
+	response.Success(ctx)
 }
 
-func (c *controller) Update(ctx *gin.Context) {
-	//TODO implement me
-	panic("implement me")
+func (c *controller) Delete(ctx *gin.Context) {
+	id, err := utils.GetID(ctx)
+	if err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+
+	if err = c.server.Delete(id); err != nil {
+		response.Error(ctx, response.CodeServerError, err)
+		return
+	}
+	response.Success(ctx)
 }
 
 func (c *controller) List(ctx *gin.Context) {
-	//TODO implement me
-	panic("implement me")
-}
+	req := new(model.ListReq)
 
-type controller struct {
-	server service.Service
+	if err := ctx.ShouldBindQuery(req); err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+
+	res, err := c.server.List(req)
+	if err != nil {
+		response.Error(ctx, response.CodeServerError, err)
+		return
+	}
+
+	response.Success(ctx, res)
 }
