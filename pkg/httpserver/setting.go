@@ -1,8 +1,7 @@
 package httpserver
 
 import (
-	"blog/pkg/repository/db"
-	"blog/pkg/repository/redis"
+	"blog/pkg/repository"
 	"context"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -77,7 +76,7 @@ func restartServer() {
 
 // cleanup 清理资源
 func cleanup() {
-	redis.Close() // 关闭Redis连接
-	db.Close()    // 关闭数据库连接
+	repository.RedisClose() // 关闭Redis连接
+	repository.GormClose()  // 关闭数据库连接
 	zap.L().Info("所有资源已成功关闭")
 }

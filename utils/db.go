@@ -1,24 +1,31 @@
 package utils
 
-func ComputeOffset(page int, size int) int {
+import "github.com/pkg/errors"
+
+func ComputeOffset(page int, size int) (int, error) {
 	if page < 1 {
-		page = 1
+		return 0, errors.New("页码必须大于0")
 	}
 	if size < 0 {
-		size = 0
+		return 0, errors.New("页面大小不能为负数")
 	}
-	return (page - 1) * size
+	return (page - 1) * size, nil
 }
 
-func ComputePages(count int64, pageSize int) int {
+func ComputePages(count int64, pageSize int, currentPage int) (int, error) {
 	if count <= 0 {
-		return 0 // 或返回1，取决于业务需求
+		return 1, nil
 	}
 	if pageSize <= 0 {
-		return 0 // 避免除零错误
+		return 1, errors.New("无效的页码大小")
 	}
 	sizeInt64 := int64(pageSize)
-	return int((count + sizeInt64 - 1) / sizeInt64)
+	pages := int((count + sizeInt64 - 1) / sizeInt64)
+
+	if currentPage > pages {
+		return 1, errors.New("请求页码超出范围")
+	}
+	return pages, nil
 }
 
 // BuildLikeQuery 构建用于SQL LIKE查询的模式字符串

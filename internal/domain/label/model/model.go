@@ -26,13 +26,6 @@ type ListReq struct {
 	Keyword  string `form:"keyword"`
 }
 
-type LabelDTO struct {
-	ID           uint    `json:"id"`
-	Name         string  `json:"name"`
-	Introduction *string `json:"introduction,omitempty"`
-	CreatedAt    string  `json:"create_at"`
-}
-
 type ListRes struct {
 	List  []LabelDTO `json:"list"`
 	Pages int        `json:"pages"`

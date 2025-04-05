@@ -5,12 +5,11 @@ package admin
 
 import (
 	"blog/internal/domain/admin/controller"
-	"blog/internal/domain/admin/repository"
+	"blog/internal/domain/admin/repository/cache"
+	"blog/internal/domain/admin/repository/db"
 	"blog/internal/domain/admin/router"
 	"blog/internal/domain/admin/service"
-	"blog/pkg/repository/db"
-	"blog/pkg/repository/redis"
-
+	"blog/pkg/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
@@ -20,9 +19,10 @@ func InitV1(r *gin.RouterGroup) error {
 		router.RegisterV1,
 		controller.NewController,
 		service.NewService,
-		repository.NewRepository,
-		db.DB,
-		redis.Client,
+		repository.GormDB,
+		repository.RedisClient,
+		db.NewDB,
+		cache.NewCache,
 	)
 	return nil
 }

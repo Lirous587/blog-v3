@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterV1(r *gin.RouterGroup, LabelCtrl controller.Controller) error {
+func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 	adminAuth, err := middleware.InitAdminAuth()
 	if err != nil {
 		panic(err)
@@ -15,12 +15,12 @@ func RegisterV1(r *gin.RouterGroup, LabelCtrl controller.Controller) error {
 
 	authValidate := adminAuth.Validate()
 
-	g := r.Group("/v1/label")
+	g := r.Group("/v1/label", authValidate)
 	{
-		g.POST("/", authValidate, LabelCtrl.Create)
-		g.PUT("/:id", authValidate, LabelCtrl.Update)
-		g.DELETE("/:id", authValidate, LabelCtrl.Delete)
-		g.GET("/list", LabelCtrl.List)
+		g.POST("/", ctrl.Create)
+		g.PUT("/:id", ctrl.Update)
+		g.DELETE("/:id", ctrl.Delete)
+		g.GET("/list", ctrl.List)
 	}
 	return nil
 }

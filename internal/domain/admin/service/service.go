@@ -2,7 +2,8 @@ package service
 
 import (
 	"blog/internal/domain/admin/model"
-	"blog/internal/domain/admin/repository"
+	"blog/internal/domain/admin/repository/cache"
+	"blog/internal/domain/admin/repository/db"
 	"blog/pkg/config"
 	"blog/pkg/jwt"
 	"blog/pkg/response"
@@ -22,15 +23,16 @@ type Service interface {
 }
 
 type service struct {
-	repo repository.Repository
+	db    db.DB
+	cache cache.Cache
 }
 
-func NewService(repo repository.Repository) Service {
-	return &service{repo: repo}
+func NewService(db db.DB, cache cache.Cache) Service {
+	return &service{db: db, cache: cache}
 }
 
 func (s *service) IfInit() (bool, error) {
-	return s.repo.HaveOne()
+	return s.db.HaveOne()
 }
 
 func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
@@ -54,7 +56,7 @@ func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
 		HashPassword: hashPassword,
 	}
 
-	if err = s.repo.Create(newAdmin); err != nil {
+	if err = s.db.Create(newAdmin); err != nil {
 		return response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
 	}
 
@@ -78,7 +80,7 @@ func (s *service) genToken(payload *model.JwtPayload) (token string, err error) 
 }
 
 func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *response.AppError) {
-	admin, err := s.repo.FindByEmail(email)
+	admin, err := s.db.FindByEmail(email)
 	if err != nil {
 		return nil, response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
 	}
@@ -101,7 +103,7 @@ func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *res
 		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
-	refreshToken, err := s.repo.GenRefreshToken(payload)
+	refreshToken, err := s.cache.GenRefreshToken(payload)
 	if err != nil {
 		return nil, response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
 	}
@@ -116,7 +118,7 @@ func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *res
 }
 
 func (s *service) RefreshToken(payload *model.JwtPayload, refreshToken string) (res *model.RefreshTokenRes, appErr *response.AppError) {
-	if err := s.repo.ValidateRefreshToken(payload, refreshToken); err != nil {
+	if err := s.cache.ValidateRefreshToken(payload, refreshToken); err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, response.NewAppError(response.CodeRefreshInvalid, errors.WithStack(err))
 		}

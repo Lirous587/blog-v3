@@ -5,12 +5,10 @@ package label
 
 import (
 	"blog/internal/domain/label/controller"
-	"blog/internal/domain/label/repository"
+	"blog/internal/domain/label/repository/db"
 	"blog/internal/domain/label/router"
 	"blog/internal/domain/label/service"
-	"blog/pkg/repository/db"
-	"blog/pkg/repository/redis"
-
+	"blog/pkg/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
@@ -20,9 +18,8 @@ func InitV1(r *gin.RouterGroup) error {
 		router.RegisterV1,
 		controller.NewController,
 		service.NewService,
-		repository.NewRepository,
-		db.DB,
-		redis.Client,
+		db.NewDB,
+		repository.GormDB,
 	)
 	return nil
 }

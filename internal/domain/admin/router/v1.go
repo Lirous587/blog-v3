@@ -6,13 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterV1(r *gin.RouterGroup, adminCtrl controller.Controller) error {
+func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 	g := r.Group("/v1/admin")
 	{
-		g.GET("/ifInit", adminCtrl.IfInit)
-		g.POST("/init", adminCtrl.Init)
-		g.POST("/login", adminCtrl.Login)
-		g.POST("/refresh_token", adminCtrl.RefreshToken)
+		g.GET("/ifInit", ctrl.IfInit)
+		g.POST("/init", ctrl.Init)
+		g.POST("/login", ctrl.Login)
+		g.POST("/refresh_token", ctrl.RefreshToken)
 	}
 	return nil
 }

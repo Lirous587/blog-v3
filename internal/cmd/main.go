@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"blog/internal/domain/admin"
+	"blog/internal/domain/essay"
 	"blog/internal/domain/label"
 	"blog/pkg/httpserver"
 )
@@ -21,6 +22,10 @@ func Main() {
 	}
 
 	if err := label.InitV1(api); err != nil {
+		panic(err)
+	}
+
+	if err := essay.InitV1(api); err != nil {
 		panic(err)
 	}
 

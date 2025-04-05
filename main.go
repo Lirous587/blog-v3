@@ -4,8 +4,7 @@ import (
 	"blog/internal/cmd"
 	"blog/pkg/config"
 	"blog/pkg/logger"
-	"blog/pkg/repository/db"
-	"blog/pkg/repository/redis"
+	"blog/pkg/repository"
 	"blog/pkg/validator"
 	"log"
 
@@ -27,11 +26,11 @@ func setting() error {
 		return errors.WithMessage(err, "validator模块初始化失败")
 	}
 
-	if err = redis.Init(&config.Cfg.Redis); err != nil {
+	if err = repository.RedisInit(&config.Cfg.Redis); err != nil {
 		return errors.WithMessage(err, "redis模块初始化失败")
 	}
 
-	if err = db.Init(&config.Cfg.DB); err != nil {
+	if err = repository.GormInit(&config.Cfg.DB); err != nil {
 		return errors.WithMessage(err, "db模块初始化失败")
 	}
 
