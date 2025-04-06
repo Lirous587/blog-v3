@@ -5,6 +5,7 @@ import (
 	"blog/internal/domain/essay"
 	"blog/internal/domain/label"
 	"blog/pkg/httpserver"
+	"go.uber.org/zap"
 )
 
 func Main() {
@@ -16,7 +17,7 @@ func Main() {
 	api := r.Group("/api")
 
 	var err error
-	// 创建admin路由
+
 	if err = admin.InitV1(api); err != nil {
 		panic(err)
 	}
@@ -28,11 +29,13 @@ func Main() {
 	if err := essay.InitV1(api); err != nil {
 		panic(err)
 	}
+	essayWorker := essay.InitWorker()
+	essayWorker.Start()
+	// 注册worker关闭函数
+	s.RegisterStopHandler(func() {
+		zap.L().Info("正在关闭Worker...")
+		essayWorker.Stop()
+	})
 
-	//api.GET("/auth", adminAuth.Validate(), func(ctx *gin.Context) {
-	//	ctx.JSON(200, gin.H{
-	//		"msg": "认证成功",
-	//	})
-	//})
 	s.Run()
 }

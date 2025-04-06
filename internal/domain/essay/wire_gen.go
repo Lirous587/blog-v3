@@ -12,6 +12,7 @@ import (
 	"blog/internal/domain/essay/repository/db"
 	"blog/internal/domain/essay/router"
 	service2 "blog/internal/domain/essay/service"
+	"blog/internal/domain/essay/worker"
 	db2 "blog/internal/domain/label/repository/db"
 	"blog/internal/domain/label/service"
 	"blog/pkg/repository"
@@ -34,6 +35,15 @@ func InitV1(r *gin.RouterGroup) error {
 	return error2
 }
 
+func InitWorker() worker.Worker {
+	gormDB := repository.GormDB()
+	dbDB := db.NewDB(gormDB)
+	client := repository.RedisClient()
+	cacheCache := cache.NewCache(client)
+	workerWorker := worker.NewWorker(dbDB, cacheCache)
+	return workerWorker
+}
+
 // wire.go:
 
 // 数据层依赖
@@ -43,4 +53,6 @@ var dataSet = wire.NewSet(repository.GormDB, repository.RedisClient)
 var labelSet = wire.NewSet(db.NewDB, service.NewService)
 
 // 文章领域依赖
-var essaySet = wire.NewSet(db2.NewDB, cache.NewCache, service2.NewService, controller.NewController, router.RegisterV1)
+var essaySet = wire.NewSet(db2.NewDB, cache.NewCache, service2.NewService)
+
+var routerSet = wire.NewSet(controller.NewController, router.RegisterV1)

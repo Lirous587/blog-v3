@@ -14,14 +14,15 @@ type Essay struct {
 	CodeTheme    string        `gorm:"not null;size:20"`
 	ImgUrl       *string       `gorm:"size:512;default:null;comment:文章封面图片链接"`
 	Labels       []model.Label `gorm:"many2many:essay_labels;"` // 多对多关系
-	Priority     int8          `gorm:"default:50;index:idx_essay_priority"`
+	VisitedTimes uint          `gorm:"default:1"`
+	Priority     uint8         `gorm:"default:50;index:idx_essay_priority"`
 }
 
 type CreateReq struct {
 	Name         string  `json:"name" binding:"required,max=30"`
 	Introduction *string `json:"introduction" binding:"omitempty,max=60"`
 	Content      string  `json:"content" binding:"required"`
-	Priority     int8    `json:"priority" binding:"required,min=0,max=100"`
+	Priority     uint8   `json:"priority" binding:"required,min=0,max=100"`
 	PreviewTheme string  `json:"preview_theme" binding:"required,max=20"`
 	CodeTheme    string  `json:"code_theme" binding:"required,max=20"`
 	ImgUrl       *string `json:"img_url" binding:"url,max=512"`
@@ -32,7 +33,7 @@ type UpdateReq struct {
 	Name         string  `json:"name" binding:"required,max=30"`
 	Introduction *string `json:"introduction" binding:"omitempty,max=60"`
 	Content      string  `json:"content" binding:"required"`
-	Priority     int8    `json:"priority" binding:"required,min=0,max=100"`
+	Priority     uint8   `json:"priority" binding:"required,min=0,max=100"`
 	PreviewTheme string  `json:"preview_theme" binding:"required,max=20"`
 	CodeTheme    string  `json:"code_theme" binding:"required,max=20"`
 	ImgUrl       *string `json:"img_url" binding:"url,max=512"`

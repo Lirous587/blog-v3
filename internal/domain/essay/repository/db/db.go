@@ -16,6 +16,8 @@ type DB interface {
 	Delete(id uint) error
 	Get(id uint) (*model.GetRes, error)
 	List(res *model.ListReq) (*model.ListRes, error)
+	FindVTsByIDs(ids []uint) (map[uint]uint, error)
+	SaveVTsByIDs(idVtMap map[uint]uint) error
 	GetTimelines(req *model.TimelineReq) (*model.TimelineRes, error)
 }
 
@@ -25,7 +27,7 @@ type db struct {
 
 func NewDB(orm *gorm.DB) DB {
 	//var essay model.Essay
-	//db.AutoMigrate(&essay)
+	//orm.AutoMigrate(&essay)
 	return &db{orm: orm}
 }
 
@@ -101,7 +103,7 @@ func (db *db) Get(id uint) (*model.GetRes, error) {
 			Order("id DESC").
 			Limit(3).
 			Preload("Labels").
-			Omit("content").
+			Omit("content", "VisitedTimes").
 			Find(&previous).Error
 	})
 
@@ -111,7 +113,7 @@ func (db *db) Get(id uint) (*model.GetRes, error) {
 			Order("id ASC").
 			Limit(3).
 			Preload("Labels").
-			Omit("content").
+			Omit("content", "VisitedTimes").
 			Find(&next).Error
 	})
 
@@ -136,6 +138,54 @@ func (db *db) Get(id uint) (*model.GetRes, error) {
 		Next:     nextDTOs,
 	}
 	return &res, errGroup.Wait()
+}
+
+func (db *db) FindVTsByIDs(ids []uint) (map[uint]uint, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	type Result struct {
+		ID           uint
+		VisitedTimes uint
+	}
+
+	var results []Result
+	if err := db.orm.Model(model.Essay{}).
+		Where("id IN ?", ids).
+		Select("id", "visited_times").
+		Find(&results).Error; err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	vtMap := make(map[uint]uint, len(results))
+
+	for i := range results {
+		vtMap[results[i].ID] = results[i].VisitedTimes
+	}
+
+	return vtMap, nil
+}
+
+func (db *db) SaveVTsByIDs(idVtMap map[uint]uint) error {
+	if len(idVtMap) == 0 {
+		return nil
+	}
+
+	// 准备批量更新的数据
+	var updates []map[string]interface{}
+	for id, vt := range idVtMap {
+		updates = append(updates, map[string]interface{}{
+			"id":            id,
+			"visited_times": vt,
+		})
+	}
+
+	// 执行批量更新
+	return db.orm.Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.Essay{}).Updates(updates)
+		return errors.WithStack(result.Error)
+	})
 }
 
 func (db *db) List(req *model.ListReq) (*model.ListRes, error) {

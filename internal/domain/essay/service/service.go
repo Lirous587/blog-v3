@@ -7,6 +7,7 @@ import (
 	model2 "blog/internal/domain/label/model"
 	labelService "blog/internal/domain/label/service"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 type Service interface {
@@ -67,8 +68,48 @@ func (s *service) Delete(id uint) (err error) {
 }
 
 func (s *service) Get(id uint) (*model.GetRes, error) {
-	res, err := s.db.Get(id)
-	return res, errors.WithStack(err)
+	errGroup := errgroup.Group{}
+
+	var res *model.GetRes
+	var vt uint
+
+	// 从redis里面去添加vt并且返回
+	errGroup.Go(func() error {
+		var err error
+		vt, err = s.cache.GetVisitedTimes(id)
+		// redis错误或无记录 db兜底
+		if err != nil || vt == 0 {
+			ids := []uint{id}
+			vtMap, err := s.db.FindVTsByIDs(ids)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			if dbVt, exists := vtMap[id]; exists {
+				vt = dbVt
+				_ = s.cache.SaveVisitedTimes(id, vt+1)
+				vt++
+			}
+		}
+		return nil
+	})
+
+	// 去db查数据
+	errGroup.Go(func() error {
+		var err error
+		res, err = s.db.Get(id)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		return nil
+	})
+
+	if err := errGroup.Wait(); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	res.VisitedTimes = vt
+
+	return res, nil
 }
 
 func (s *service) List(req *model.ListReq) (*model.ListRes, error) {

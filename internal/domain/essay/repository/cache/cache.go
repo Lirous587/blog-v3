@@ -4,18 +4,17 @@ import (
 	"blog/internal/domain/essay/model"
 	"blog/utils"
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
+	"strconv"
 )
 
 type Cache interface {
-	//FindByID(id uint) (*model.Essay, error)
-	//Create(req *model.CreateReq, labels []labelModel.Label) error
-	//Update(id uint, req *model.UpdateReq, labels []labelModel.Label) error
-	//Delete(id uint) error
-	//Get(id uint) (*model.GetRes, error)
-	//List(res *model.ListReq) (*model.ListRes, error)
-	//GetTimelines(req *model.TimelineReq) (*model.TimelineRes, error)
+	GetVisitedTimes(id uint) (uint, error)
+	SaveVisitedTimes(id, vt uint) error
+
+	GetAllVt() (map[uint]uint, error)
 	GetDates() ([]string, error)
 }
 
@@ -24,17 +23,59 @@ type cache struct {
 }
 
 const (
-	essayDatesKey = "essay:dates"
+	essayVisitedTimesKey = "essay:visitedTimesMap"
+	essayDatesKey        = "essay:dates"
 )
 
 func NewCache(client *redis.Client) Cache {
 	return &cache{client: client}
 }
 
-func (r *cache) GetDates() ([]string, error) {
+func (ch *cache) GetVisitedTimes(id uint) (uint, error) {
+	idStr := fmt.Sprintf("%d", id)
+	key := utils.GetRedisKey(essayVisitedTimesKey)
+
+	vt, err := ch.client.HIncrBy(context.Background(), key, idStr, 1).Result()
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	return uint(vt), nil
+}
+
+func (ch *cache) SaveVisitedTimes(id, vt uint) error {
+	idStr := fmt.Sprintf("%d", id)
+	key := utils.GetRedisKey(essayVisitedTimesKey)
+
+	if err := ch.client.HSet(context.Background(), key, idStr, vt).Err(); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+func (ch *cache) GetAllVt() (map[uint]uint, error) {
+	key := utils.GetRedisKey(essayVisitedTimesKey)
+	ctx := context.Background()
+
+	result, err := ch.client.HGetAll(ctx, key).Result()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	vtMap := make(map[uint]uint, len(result))
+	for idStr, vtStr := range result {
+		id, _ := strconv.ParseUint(idStr, 10, 64)
+		vt, _ := strconv.ParseUint(vtStr, 10, 64)
+		vtMap[uint(id)] = uint(vt)
+	}
+
+	return vtMap, nil
+}
+
+func (ch *cache) GetDates() ([]string, error) {
 	key := utils.GetRedisKey(essayDatesKey)
 
-	res, err := r.client.LRange(context.Background(), key, 0, -1).Result()
+	res, err := ch.client.LRange(context.Background(), key, 0, -1).Result()
 
 	if errors.Is(err, redis.Nil) || len(res) == 0 {
 		var essays []model.Essay
@@ -56,7 +97,7 @@ func (r *cache) GetDates() ([]string, error) {
 
 		// 如果有日期，存入Redis
 		if len(uniqueDates) > 0 {
-			pipe := r.client.Pipeline()
+			pipe := ch.client.Pipeline()
 			// 先删除旧key
 			pipe.Del(context.Background(), key)
 			// 正确使用RPUSH添加多个元素

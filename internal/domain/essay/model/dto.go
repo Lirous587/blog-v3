@@ -15,7 +15,8 @@ type EssayDTO struct {
 	CodeTheme    string           `json:"code_theme"`
 	ImgUrl       *string          `json:"img_url"`
 	Labels       []model.LabelDTO `json:"labels"`
-	Priority     int8             `json:"priority"`
+	VisitedTimes uint             `json:"visited_times"`
+	Priority     uint8            `json:"priority"`
 }
 
 func (essay *Essay) ConvertToDTO() *EssayDTO {
@@ -35,6 +36,7 @@ func (essay *Essay) ConvertToDTO() *EssayDTO {
 		Name:         essay.Name,
 		Introduction: essay.Introduction,
 		Content:      essay.Content,
+		VisitedTimes: essay.VisitedTimes,
 		Priority:     essay.Priority,
 		PreviewTheme: essay.PreviewTheme,
 		CodeTheme:    essay.CodeTheme,

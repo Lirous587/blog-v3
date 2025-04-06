@@ -9,6 +9,7 @@ import (
 	labelDB "blog/internal/domain/essay/repository/db"
 	"blog/internal/domain/essay/router"
 	"blog/internal/domain/essay/service"
+	"blog/internal/domain/essay/worker"
 	essayDB "blog/internal/domain/label/repository/db"
 	labelServer "blog/internal/domain/label/service"
 	"blog/pkg/repository"
@@ -34,12 +35,26 @@ var essaySet = wire.NewSet(
 	essayDB.NewDB,
 	essayCache.NewCache,
 	service.NewService,
+)
+
+var routerSet = wire.NewSet(
 	controller.NewController,
 	router.RegisterV1,
 )
 
 func InitV1(r *gin.RouterGroup) error {
 	wire.Build(
+		routerSet,
+		dataSet,
+		labelSet,
+		essaySet,
+	)
+	return nil
+}
+
+func InitWorker() worker.Worker {
+	wire.Build(
+		worker.NewWorker,
 		dataSet,
 		labelSet,
 		essaySet,

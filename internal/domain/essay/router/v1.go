@@ -24,5 +24,6 @@ func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 		g.GET("/list", ctrl.List)
 		g.GET("/timeline", ctrl.GetTimelines)
 	}
+
 	return nil
 }
