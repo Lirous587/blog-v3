@@ -57,12 +57,11 @@ type ListRes struct {
 	Pages int        `json:"pages"`
 }
 
-type TimelineReq struct {
-	Page     int `form:"page" binding:"required,min=1"`
-	PageSize int `form:"page_size" binding:"required,max=15"`
+type Timeline struct {
+	Data    string     `json:"data"`
+	Records []EssayDTO `json:"records"`
 }
 
 type TimelineRes struct {
-	Data    string     `json:"data"`
-	Records []EssayDTO `json:"records"`
+	List []Timeline `json:"list"`
 }

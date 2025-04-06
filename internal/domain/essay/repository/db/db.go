@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
+	"time"
 )
 
 type DB interface {
@@ -18,7 +19,7 @@ type DB interface {
 	List(res *model.ListReq) (*model.ListRes, error)
 	FindVTsByIDs(ids []uint) (map[uint]uint, error)
 	SaveVTsByIDs(idVtMap map[uint]uint) error
-	GetTimelines(req *model.TimelineReq) (*model.TimelineRes, error)
+	GetTimelines() (*model.TimelineRes, error)
 }
 
 type db struct {
@@ -172,19 +173,27 @@ func (db *db) SaveVTsByIDs(idVtMap map[uint]uint) error {
 		return nil
 	}
 
-	// 准备批量更新的数据
-	var updates []map[string]interface{}
-	for id, vt := range idVtMap {
-		updates = append(updates, map[string]interface{}{
-			"id":            id,
-			"visited_times": vt,
-		})
+	// 构建批量更新语句
+	type BatchUpdate struct {
+		ID           uint
+		VisitedTimes uint
 	}
 
-	// 执行批量更新
+	var updates []BatchUpdate
+	for id, vt := range idVtMap {
+		updates = append(updates, BatchUpdate{ID: id, VisitedTimes: vt})
+	}
+
 	return db.orm.Transaction(func(tx *gorm.DB) error {
-		result := tx.Model(&model.Essay{}).Updates(updates)
-		return errors.WithStack(result.Error)
+		for _, update := range updates {
+			if err := tx.Model(&model.Essay{}).
+				Where("id = ?", update.ID).
+				Updates(map[string]interface{}{"visited_times": update.VisitedTimes}).
+				Error; err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		return nil
 	})
 }
 
@@ -233,6 +242,65 @@ func (db *db) List(req *model.ListReq) (*model.ListRes, error) {
 	}, nil
 }
 
-func (db *db) GetTimelines(req *model.TimelineReq) (*model.TimelineRes, error) {
-	return nil, nil
+func (db *db) GetYearDates() ([]string, error) {
+	var essays []model.Essay
+	if err := db.orm.Model(&model.Essay{}).Select("created_at").Find(&essays).Error; err != nil {
+		return nil, errors.WithStack(err)
+	}
+	// 使用map去重
+	dateMap := make(map[string]struct{})
+	for i := range essays {
+		month := essays[i].CreatedAt.Format("2006-01")
+		dateMap[month] = struct{}{}
+	}
+
+	// 转换为切片
+	uniqueDates := make([]string, 0, len(dateMap))
+	for date := range dateMap {
+		uniqueDates = append(uniqueDates, date)
+	}
+	return uniqueDates, nil
+}
+
+func (db *db) GetTimelines() (*model.TimelineRes, error) {
+	// 拿到所有年份
+	dates, err := db.GetYearDates()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	timelines := make([]model.Timeline, 0, len(dates))
+
+	for _, date := range dates {
+		startTime, err := time.Parse("2006-01", date)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		nextMonth := startTime.AddDate(0, 1, 0)
+
+		var essays []model.Essay
+		if err := db.orm.
+			Where("created_at >= ? AND created_at < ?", startTime, nextMonth).
+			Select([]string{"id", "name", "created_at"}).
+			Find(&essays).Error; err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		dtos := make([]model.EssayDTO, len(essays))
+		for i := range essays {
+			dtos[i] = *essays[i].ConvertToDTO()
+
+		}
+
+		if len(dtos) > 0 {
+			timelines = append(timelines, model.Timeline{
+				Data:    date,
+				Records: dtos,
+			})
+		}
+	}
+
+	result := &model.TimelineRes{List: timelines}
+	return result, nil
 }

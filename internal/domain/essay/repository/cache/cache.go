@@ -4,18 +4,20 @@ import (
 	"blog/internal/domain/essay/model"
 	"blog/utils"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"strconv"
+	"time"
 )
 
 type Cache interface {
-	GetVisitedTimes(id uint) (uint, error)
 	SaveVisitedTimes(id, vt uint) error
-
+	GetVisitedTimes(id uint) (uint, error)
 	GetAllVt() (map[uint]uint, error)
-	GetDates() ([]string, error)
+	SaveTimeline(data *model.TimelineRes) error
+	GetTimeline() (*model.TimelineRes, error)
 }
 
 type cache struct {
@@ -24,7 +26,7 @@ type cache struct {
 
 const (
 	essayVisitedTimesKey = "essay:visitedTimesMap"
-	essayDatesKey        = "essay:dates"
+	essayTimelineKey     = "essay:timeline"
 )
 
 func NewCache(client *redis.Client) Cache {
@@ -72,45 +74,39 @@ func (ch *cache) GetAllVt() (map[uint]uint, error) {
 	return vtMap, nil
 }
 
-func (ch *cache) GetDates() ([]string, error) {
-	key := utils.GetRedisKey(essayDatesKey)
+func (ch *cache) SaveTimeline(data *model.TimelineRes) error {
+	key := utils.GetRedisKey(essayTimelineKey)
+	ctx := context.Background()
+	pipeline := ch.client.Pipeline()
+	duration := 24 * time.Hour
 
-	res, err := ch.client.LRange(context.Background(), key, 0, -1).Result()
+	pipeline.JSONSet(ctx, key, ".", data)
 
-	if errors.Is(err, redis.Nil) || len(res) == 0 {
-		var essays []model.Essay
-		//if err := r.db.Model(&model.Essay{}).Select("created_at").Find(&essays).Error; err != nil {
-		//	return nil, errors.WithStack(err)
-		//}
-		// 使用map去重
-		dateMap := make(map[string]struct{})
-		for i := range essays {
-			month := essays[i].CreatedAt.Format("2006-01")
-			dateMap[month] = struct{}{}
-		}
+	pipeline.Expire(ctx, key, duration)
 
-		// 转换为切片
-		uniqueDates := make([]string, 0, len(dateMap))
-		for date := range dateMap {
-			uniqueDates = append(uniqueDates, date)
-		}
+	if _, err := pipeline.Exec(ctx); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
 
-		// 如果有日期，存入Redis
-		if len(uniqueDates) > 0 {
-			pipe := ch.client.Pipeline()
-			// 先删除旧key
-			pipe.Del(context.Background(), key)
-			// 正确使用RPUSH添加多个元素
-			pipe.RPush(context.Background(), key, uniqueDates)
+func (ch *cache) GetTimeline() (*model.TimelineRes, error) {
+	key := utils.GetRedisKey(essayTimelineKey)
+	ctx := context.Background()
 
-			if _, err = pipe.Exec(context.Background()); err != nil {
-				return uniqueDates, errors.WithStack(err) // 返回数据但同时报告Redis错误
-			}
-			return uniqueDates, nil
-		}
-		return []string{}, nil
-	} else if err != nil {
-		return nil, err
+	result, err := ch.client.JSONGet(ctx, key).Result()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	if result == "" {
+		return nil, redis.Nil
+	}
+
+	res := new(model.TimelineRes)
+
+	if err = json.Unmarshal([]byte(result), res); err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	return res, nil

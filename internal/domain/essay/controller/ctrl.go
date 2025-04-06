@@ -109,14 +109,7 @@ func (c *controller) List(ctx *gin.Context) {
 }
 
 func (c *controller) GetTimelines(ctx *gin.Context) {
-	req := new(model.TimelineReq)
-
-	if err := ctx.ShouldBindQuery(req); err != nil {
-		response.Error(ctx, response.CodeParamInvalid, err)
-		return
-	}
-
-	res, err := c.server.GetTimelines(req)
+	res, err := c.server.GetTimelines()
 	if err != nil {
 		response.Error(ctx, response.CodeServerError, err)
 		return

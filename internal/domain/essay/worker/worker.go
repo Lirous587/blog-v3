@@ -3,6 +3,7 @@ package worker
 import (
 	"blog/internal/domain/essay/repository/cache"
 	"blog/internal/domain/essay/repository/db"
+	"fmt"
 	"go.uber.org/zap"
 	"time"
 )
@@ -27,7 +28,7 @@ func NewWorker(db db.DB, cache cache.Cache) Worker {
 	}
 }
 
-const workerInternal = 1 * time.Minute
+const workerInternal = 24 * time.Hour
 
 func (w *worker) Start() {
 	w.ticker = time.NewTicker(workerInternal) // 每5分钟同步一次
@@ -35,7 +36,8 @@ func (w *worker) Start() {
 	go func() {
 		// 启动后立即执行一次同步
 		if err := w.syncVisitedTimes(); err != nil {
-			zap.L().Error("同步访问次数失败: %v", zap.Error(err))
+			fmt.Printf("%+v", err)
+			//zap.L().Error("同步访问次数失败: %v", zap.Error(err))
 		}
 
 		for {

@@ -7,6 +7,7 @@ import (
 	model2 "blog/internal/domain/label/model"
 	labelService "blog/internal/domain/label/service"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -16,7 +17,7 @@ type Service interface {
 	Delete(id uint) error
 	Get(id uint) (*model.GetRes, error)
 	List(req *model.ListReq) (*model.ListRes, error)
-	GetTimelines(req *model.TimelineReq) (*model.TimelineRes, error)
+	GetTimelines() (*model.TimelineRes, error)
 }
 
 type service struct {
@@ -117,13 +118,22 @@ func (s *service) List(req *model.ListReq) (*model.ListRes, error) {
 	return res, errors.WithStack(err)
 }
 
-func (s *service) GetTimelines(req *model.TimelineReq) (*model.TimelineRes, error) {
-	//dates, err := s.cache.GetDates()
-	//if err != nil {
-	//	return nil, errors.WithStack(err)
-	//}
+func (s *service) GetTimelines() (*model.TimelineRes, error) {
+	res, err := s.cache.GetTimeline()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			res, err = s.db.GetTimelines()
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
 
-	//res, err := s.repo.GetTimelines(req)
-	//return res, errors.WithStack(err)
-	return nil, nil
+			if err = s.cache.SaveTimeline(res); err != nil {
+				return nil, errors.WithStack(err)
+			}
+			return res, nil
+		}
+		return nil, errors.WithStack(err)
+	}
+
+	return res, nil
 }
