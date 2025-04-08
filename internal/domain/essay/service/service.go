@@ -17,7 +17,7 @@ type Service interface {
 	Delete(id uint) error
 	Get(id uint) (*model.GetRes, error)
 	List(req *model.ListReq) (*model.ListRes, error)
-	GetTimelines() (*model.TimelineRes, error)
+	GetTimelines() ([]model.Timeline, error)
 }
 
 type service struct {
@@ -140,7 +140,7 @@ func (s *service) List(req *model.ListReq) (*model.ListRes, error) {
 	return res, nil
 }
 
-func (s *service) GetTimelines() (*model.TimelineRes, error) {
+func (s *service) GetTimelines() ([]model.Timeline, error) {
 	res, err := s.cache.GetTimeline()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {

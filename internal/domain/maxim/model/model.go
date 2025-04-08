@@ -14,13 +14,13 @@ type Maxim struct {
 type CreateReq struct {
 	Content string `json:"content" binding:"required,max=60"`
 	Author  string `json:"author" binding:"required,max=60"`
-	Color   string `json:"color"`
+	Color   string `json:"color" binding:"hex_color"`
 }
 
 type UpdateReq struct {
 	Content string `json:"content" binding:"required,max=60"`
 	Author  string `json:"author" binding:"required,max=60"`
-	Color   string `json:"color"`
+	Color   string `json:"color" binding:"hex_color"`
 }
 
 type ListReq struct {
@@ -32,8 +32,4 @@ type ListReq struct {
 type ListRes struct {
 	List  []MaximDTO `json:"list"`
 	Pages int        `json:"pages"`
-}
-
-type AllRes struct {
-	List []MaximDTO `json:"list"`
 }

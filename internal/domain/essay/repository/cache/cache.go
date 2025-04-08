@@ -17,8 +17,8 @@ type Cache interface {
 	GetVisitedTimes(id uint) (uint, error)
 	GetNVisitedTimes(ids []uint) (map[uint]uint, error)
 	GetAllVt() (map[uint]uint, error)
-	SaveTimeline(data *model.TimelineRes) error
-	GetTimeline() (*model.TimelineRes, error)
+	SaveTimeline(data []model.Timeline) error
+	GetTimeline() ([]model.Timeline, error)
 }
 
 type cache struct {
@@ -28,7 +28,7 @@ type cache struct {
 const (
 	essayVisitedTimesKey     = "essay:visitedTimesMap"
 	essayTimelineKey         = "essay:timeline"
-	essayTimelineKeyDuration = 24 * time.Hour
+	essayTimelineKeyDuration = 2 * time.Hour
 )
 
 func NewCache(client *redis.Client) Cache {
@@ -104,12 +104,12 @@ func (ch *cache) GetAllVt() (map[uint]uint, error) {
 	return vtMap, nil
 }
 
-func (ch *cache) SaveTimeline(data *model.TimelineRes) error {
+func (ch *cache) SaveTimeline(list []model.Timeline) error {
 	key := utils.GetRedisKey(essayTimelineKey)
 	ctx := context.Background()
 	pipeline := ch.client.Pipeline()
 
-	pipeline.JSONSet(ctx, key, ".", data)
+	pipeline.JSONSet(ctx, key, ".", list)
 
 	pipeline.Expire(ctx, key, essayTimelineKeyDuration)
 
@@ -119,7 +119,7 @@ func (ch *cache) SaveTimeline(data *model.TimelineRes) error {
 	return nil
 }
 
-func (ch *cache) GetTimeline() (*model.TimelineRes, error) {
+func (ch *cache) GetTimeline() ([]model.Timeline, error) {
 	key := utils.GetRedisKey(essayTimelineKey)
 	ctx := context.Background()
 
@@ -132,9 +132,9 @@ func (ch *cache) GetTimeline() (*model.TimelineRes, error) {
 		return nil, redis.Nil
 	}
 
-	res := new(model.TimelineRes)
+	var res []model.Timeline
 
-	if err = json.Unmarshal([]byte(result), res); err != nil {
+	if err = json.Unmarshal([]byte(result), &res); err != nil {
 		return nil, errors.WithStack(err)
 	}
 

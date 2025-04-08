@@ -23,7 +23,7 @@ func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 		g.GET("/list", ctrl.List)
 	}
 	g2 := r.Group("/v1/label")
-	g2.GET("/v1/label/all", ctrl.GetAllWithEssayCount)
+	g2.GET("/all", ctrl.GetAllWithEssayCount)
 
 	return nil
 }

@@ -25,7 +25,7 @@ func NewCache(client *redis.Client) Cache {
 
 const (
 	labelEssayCountsKey         = "label:essay_counts"
-	labelEssayCountsKeyDuration = 24 * time.Hour
+	labelEssayCountsKeyDuration = 2 * time.Hour
 )
 
 func (ch *cache) SaveAllWithEssayCount(list []model.LabelDTO) error {

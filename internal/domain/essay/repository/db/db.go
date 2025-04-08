@@ -19,7 +19,7 @@ type DB interface {
 	List(res *model.ListReq) (*model.ListRes, error)
 	FindVTsByIDs(ids []uint) (map[uint]uint, error)
 	SaveVTsByIDs(idVtMap map[uint]uint) error
-	GetTimelines() (*model.TimelineRes, error)
+	GetTimelines() ([]model.Timeline, error)
 }
 
 type db struct {
@@ -262,7 +262,7 @@ func (db *db) GetYearDates() ([]string, error) {
 	return uniqueDates, nil
 }
 
-func (db *db) GetTimelines() (*model.TimelineRes, error) {
+func (db *db) GetTimelines() ([]model.Timeline, error) {
 	// 拿到所有年份
 	dates, err := db.GetYearDates()
 	if err != nil {
@@ -300,6 +300,5 @@ func (db *db) GetTimelines() (*model.TimelineRes, error) {
 		}
 	}
 
-	result := &model.TimelineRes{List: timelines}
-	return result, nil
+	return timelines, nil
 }

@@ -61,7 +61,3 @@ type Timeline struct {
 	Data    string     `json:"data"`
 	Records []EssayDTO `json:"records"`
 }
-
-type TimelineRes struct {
-	List []Timeline `json:"list"`
-}
