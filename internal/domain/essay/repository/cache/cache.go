@@ -26,8 +26,9 @@ type cache struct {
 }
 
 const (
-	essayVisitedTimesKey = "essay:visitedTimesMap"
-	essayTimelineKey     = "essay:timeline"
+	essayVisitedTimesKey     = "essay:visitedTimesMap"
+	essayTimelineKey         = "essay:timeline"
+	essayTimelineKeyDuration = 24 * time.Hour
 )
 
 func NewCache(client *redis.Client) Cache {
@@ -107,11 +108,10 @@ func (ch *cache) SaveTimeline(data *model.TimelineRes) error {
 	key := utils.GetRedisKey(essayTimelineKey)
 	ctx := context.Background()
 	pipeline := ch.client.Pipeline()
-	duration := 24 * time.Hour
 
 	pipeline.JSONSet(ctx, key, ".", data)
 
-	pipeline.Expire(ctx, key, duration)
+	pipeline.Expire(ctx, key, essayTimelineKeyDuration)
 
 	if _, err := pipeline.Exec(ctx); err != nil {
 		return errors.WithStack(err)

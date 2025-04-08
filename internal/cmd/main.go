@@ -4,8 +4,8 @@ import (
 	"blog/internal/domain/admin"
 	"blog/internal/domain/essay"
 	"blog/internal/domain/label"
+	"blog/internal/domain/maxim"
 	"blog/pkg/httpserver"
-	"go.uber.org/zap"
 )
 
 func Main() {
@@ -29,13 +29,17 @@ func Main() {
 	if err := essay.InitV1(api); err != nil {
 		panic(err)
 	}
-	essayWorker := essay.InitWorker()
-	essayWorker.Start()
-	// 注册worker关闭函数
-	s.RegisterStopHandler(func() {
-		zap.L().Info("正在关闭Worker...")
-		essayWorker.Stop()
-	})
+	{
+		essayWorker := essay.InitWorker()
+		essayWorker.Start()
+		s.RegisterStopHandler(func() {
+			essayWorker.Stop()
+		})
+	}
+
+	if err := maxim.InitV1(api); err != nil {
+		panic(err)
+	}
 
 	s.Run()
 }

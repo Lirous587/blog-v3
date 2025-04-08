@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"blog/internal/domain/label/model"
-	"blog/internal/domain/label/service"
+	"blog/internal/domain/maxim/model"
+	"blog/internal/domain/maxim/service"
 	"blog/pkg/response"
 	"blog/utils"
 	"github.com/gin-gonic/gin"
@@ -13,7 +13,7 @@ type Controller interface {
 	Delete(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	List(ctx *gin.Context)
-	GetAllWithEssayCount(ctx *gin.Context)
+	GetRandom20(ctx *gin.Context)
 }
 
 type controller struct {
@@ -92,12 +92,14 @@ func (c *controller) List(ctx *gin.Context) {
 	response.Success(ctx, res)
 }
 
-func (c *controller) GetAllWithEssayCount(ctx *gin.Context) {
-	res, err := c.server.GetAllWithEssayCount()
+func (c *controller) GetRandom20(ctx *gin.Context) {
+	list, err := c.server.GetRandom20()
 	if err != nil {
 		response.Error(ctx, response.CodeServerError, err)
 		return
 	}
+	var res model.ListRes
+	res.List = list
 
 	response.Success(ctx, res)
 }
