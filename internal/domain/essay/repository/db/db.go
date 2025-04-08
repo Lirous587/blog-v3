@@ -290,7 +290,6 @@ func (db *db) GetTimelines() (*model.TimelineRes, error) {
 		dtos := make([]model.EssayDTO, len(essays))
 		for i := range essays {
 			dtos[i] = *essays[i].ConvertToDTO()
-
 		}
 
 		if len(dtos) > 0 {

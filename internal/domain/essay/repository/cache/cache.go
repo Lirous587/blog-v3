@@ -15,6 +15,7 @@ import (
 type Cache interface {
 	SaveVisitedTimes(id, vt uint) error
 	GetVisitedTimes(id uint) (uint, error)
+	GetNVisitedTimes(ids []uint) (map[uint]uint, error)
 	GetAllVt() (map[uint]uint, error)
 	SaveTimeline(data *model.TimelineRes) error
 	GetTimeline() (*model.TimelineRes, error)
@@ -43,6 +44,34 @@ func (ch *cache) GetVisitedTimes(id uint) (uint, error) {
 	}
 
 	return uint(vt), nil
+}
+
+func (ch *cache) GetNVisitedTimes(ids []uint) (map[uint]uint, error) {
+	key := utils.GetRedisKey(essayVisitedTimesKey)
+
+	idsStr := make([]string, 0, len(ids))
+
+	for _, id := range ids {
+		idsStr = append(idsStr, fmt.Sprintf("%d", id))
+	}
+
+	vts, err := ch.client.HMGet(context.Background(), key, idsStr...).Result()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	vtMap := make(map[uint]uint, len(vts))
+
+	for i, vt := range vts {
+		if vt != nil {
+			vtUint, _ := strconv.ParseUint(vt.(string), 10, 64)
+			vtMap[ids[i]] = uint(vtUint)
+		} else {
+			vtMap[ids[i]] = 0
+		}
+	}
+
+	return vtMap, nil
 }
 
 func (ch *cache) SaveVisitedTimes(id, vt uint) error {

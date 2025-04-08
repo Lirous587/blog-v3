@@ -5,6 +5,7 @@ package label
 
 import (
 	"blog/internal/domain/label/controller"
+	"blog/internal/domain/label/repository/cache"
 	"blog/internal/domain/label/repository/db"
 	"blog/internal/domain/label/router"
 	"blog/internal/domain/label/service"
@@ -19,7 +20,9 @@ func InitV1(r *gin.RouterGroup) error {
 		controller.NewController,
 		service.NewService,
 		db.NewDB,
+		cache.NewCache,
 		repository.GormDB,
+		repository.RedisClient,
 	)
 	return nil
 }

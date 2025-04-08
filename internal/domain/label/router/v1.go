@@ -21,6 +21,7 @@ func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 		g.PUT("/:id", ctrl.Update)
 		g.DELETE("/:id", ctrl.Delete)
 		g.GET("/list", ctrl.List)
+		g.GET("/all", ctrl.GetAllWithEssayCount)
 	}
 	return nil
 }

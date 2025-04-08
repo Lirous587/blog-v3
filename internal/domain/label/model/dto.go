@@ -3,7 +3,8 @@ package model
 type LabelDTO struct {
 	ID           uint    `json:"id"`
 	Name         string  `json:"name"`
-	Introduction *string `json:"introduction,omitempty"`
+	Introduction *string `json:"introduction"`
+	EssayCount   uint    `json:"essay_count"`
 }
 
 func (l *Label) ConvertToDTO() *LabelDTO {
@@ -12,13 +13,4 @@ func (l *Label) ConvertToDTO() *LabelDTO {
 		Name:         l.Name,
 		Introduction: l.Introduction,
 	}
-
-	//dtos := make([]model.LabelDTO, len(labels))
-	//for i, label := range labels {
-	//	dtos[i] = model.LabelDTO{
-	//		ID:           label.ID,
-	//		Name:         label.Name,
-	//		Introduction: label.Introduction,
-	//	}
-	//}
 }

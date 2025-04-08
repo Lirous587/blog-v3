@@ -16,6 +16,7 @@ type DB interface {
 	Update(id uint, req *model.UpdateReq) error
 	Delete(id uint) error
 	List(res *model.ListReq) (*model.ListRes, error)
+	GetAllWithEssayCount() ([]model.LabelDTO, error)
 }
 
 type db struct {
@@ -119,4 +120,24 @@ func (db *db) List(req *model.ListReq) (*model.ListRes, error) {
 	}
 
 	return res, nil
+}
+
+func (db *db) GetAllWithEssayCount() ([]model.LabelDTO, error) {
+	var labels []model.Label
+	if err := db.orm.Find(&labels).Error; err != nil {
+		return nil, errors.WithStack(err)
+	}
+	dtos := make([]model.LabelDTO, len(labels))
+
+	for i := range labels {
+		dtos[i] = *labels[i].ConvertToDTO()
+		var count int64
+		if err := db.orm.Table("essay_labels").
+			Where("label_id = ?", labels[i].ID).
+			Count(&count).Error; err != nil {
+			return nil, errors.WithStack(err)
+		}
+		dtos[i].EssayCount = uint(count)
+	}
+	return dtos, nil
 }

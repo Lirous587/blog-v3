@@ -2,8 +2,10 @@ package service
 
 import (
 	"blog/internal/domain/label/model"
+	"blog/internal/domain/label/repository/cache"
 	"blog/internal/domain/label/repository/db"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -13,14 +15,19 @@ type Service interface {
 	Delete(id uint) error
 	List(req *model.ListReq) (res *model.ListRes, err error)
 	FindByIDs(ids []uint) ([]model.Label, error)
+	GetAllWithEssayCount() ([]model.LabelDTO, error)
 }
 
 type service struct {
-	db db.DB
+	db    db.DB
+	cache cache.Cache
 }
 
-func NewService(db db.DB) Service {
-	return &service{db: db}
+func NewService(db db.DB, cache cache.Cache) Service {
+	return &service{
+		db:    db,
+		cache: cache,
+	}
 }
 
 func (s *service) Create(req *model.CreateReq) (err error) {
@@ -79,4 +86,23 @@ func (s *service) List(req *model.ListReq) (res *model.ListRes, err error) {
 
 func (s *service) FindByIDs(ids []uint) ([]model.Label, error) {
 	return s.db.FindByIDs(ids)
+}
+
+func (s *service) GetAllWithEssayCount() ([]model.LabelDTO, error) {
+	var res []model.LabelDTO
+	var err error
+	if res, err = s.cache.GetAllWithEssayCount(); err != nil {
+		if errors.Is(err, redis.Nil) {
+			if res, err = s.db.GetAllWithEssayCount(); err != nil {
+				return nil, errors.WithStack(err)
+			}
+			if err = s.cache.SaveAllWithEssayCount(res); err != nil {
+				return nil, errors.WithStack(err)
+			}
+			return res, err
+		}
+		return nil, errors.WithStack(err)
+	}
+
+	return res, nil
 }

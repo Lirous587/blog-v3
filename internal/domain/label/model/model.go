@@ -30,3 +30,7 @@ type ListRes struct {
 	List  []LabelDTO `json:"list"`
 	Pages int        `json:"pages"`
 }
+
+type AllRes struct {
+	List []LabelDTO `json:"list"`
+}

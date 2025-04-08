@@ -115,7 +115,29 @@ func (s *service) Get(id uint) (*model.GetRes, error) {
 
 func (s *service) List(req *model.ListReq) (*model.ListRes, error) {
 	res, err := s.db.List(req)
-	return res, errors.WithStack(err)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	ids := make([]uint, len(res.List))
+	for i := range ids {
+		ids[i] = res.List[i].ID
+	}
+
+	vtMap, err := s.cache.GetNVisitedTimes(ids)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	for i := range res.List {
+		id := res.List[i].ID
+		vt := vtMap[id]
+		if vt != 0 {
+			res.List[i].VisitedTimes = vt
+		}
+	}
+
+	return res, nil
 }
 
 func (s *service) GetTimelines() (*model.TimelineRes, error) {

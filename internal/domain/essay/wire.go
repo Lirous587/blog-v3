@@ -10,6 +10,7 @@ import (
 	"blog/internal/domain/essay/router"
 	"blog/internal/domain/essay/service"
 	"blog/internal/domain/essay/worker"
+	labelCache "blog/internal/domain/label/repository/cache"
 	essayDB "blog/internal/domain/label/repository/db"
 	labelServer "blog/internal/domain/label/service"
 	"blog/pkg/repository"
@@ -28,6 +29,7 @@ var dataSet = wire.NewSet(
 var labelSet = wire.NewSet(
 	labelDB.NewDB,
 	labelServer.NewService,
+	labelCache.NewCache,
 )
 
 // 文章领域依赖
