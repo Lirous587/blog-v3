@@ -14,6 +14,9 @@ func Register(v *validator.Validate) error {
 	if err = v.RegisterValidation("hex_color", validateHexColor); err != nil {
 		return errors.WithMessage(err, "register hex_color failed")
 	}
+	if err = v.RegisterValidation("domain_url", validateDomainURL); err != nil {
+		return errors.WithMessage(err, "register domain_url failed")
+	}
 
 	return nil
 }
@@ -40,6 +43,10 @@ func (r *RTrans) RegisterTranslation(v *validator.Validate) error {
 		if err := r.registerHexColorTranslation(v, t, true); err != nil {
 			return errors.WithMessage(err, "registerHexColorTranslation failed")
 		}
+		// 域名url
+		if err := r.registerDomainURLTranslation(v, t, true); err != nil {
+			return errors.WithMessage(err, "registerHexColorTranslation failed")
+		}
 	}
 
 	// 注册英文自定义翻译
@@ -49,6 +56,10 @@ func (r *RTrans) RegisterTranslation(v *validator.Validate) error {
 			return errors.WithMessage(err, "registerMobileCNTranslation failed")
 		}
 		if err := r.registerHexColorTranslation(v, t, false); err != nil {
+			return errors.WithMessage(err, "registerHexColorTranslation failed")
+		}
+		// 域名url
+		if err := r.registerDomainURLTranslation(v, t, false); err != nil {
 			return errors.WithMessage(err, "registerHexColorTranslation failed")
 		}
 	}

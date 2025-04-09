@@ -22,5 +22,8 @@ var (
 		CodeDatabaseError:  "数据库错误",
 		CodeInternalError:  "内部服务器错误",
 		CodeRecordNotFound: "该记录不存在",
+
+		//
+		CodeFriendLinkUrlDuplicate: "对应的友链url已存在",
 	}
 )

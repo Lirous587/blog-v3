@@ -7,7 +7,7 @@ import (
 	"regexp"
 )
 
-// 自定义中国手机号验证
+// 自定义十六进制颜色
 func validateHexColor(fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 	pattern := `^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$`
@@ -15,7 +15,7 @@ func validateHexColor(fl validator.FieldLevel) bool {
 	return matched
 }
 
-// 注册中国手机号验证翻译
+// 十六进制颜色验证翻译
 func (r *RTrans) registerHexColorTranslation(v *validator.Validate, t ut.Translator, isChinese bool) error {
 	message := "{0} must be a valid hex color,such as #FFF or #F5A942"
 	if isChinese {

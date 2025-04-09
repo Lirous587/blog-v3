@@ -22,11 +22,6 @@ const (
 	CodeRefreshInvalid
 )
 
-// 管理员相关错误 4100-4199
-const (
-	CodeAdminExist code = 4200 + iota
-)
-
 // 资源错误 4300-4299
 const (
 	CodeResourceNotFound code = 4300 + iota
