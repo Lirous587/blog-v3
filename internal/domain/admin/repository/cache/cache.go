@@ -2,7 +2,6 @@ package cache
 
 import (
 	"blog/internal/domain/admin/model"
-	"blog/pkg/config"
 	"blog/utils"
 	"context"
 	"encoding/json"
@@ -15,6 +14,7 @@ import (
 type Cache interface {
 	GenRefreshToken(payload *model.JwtPayload) (string, error)
 	ValidateRefreshToken(payload *model.JwtPayload, refreshToken string) error
+	ResetRefreshTokenExpiry(payload *model.JwtPayload) error
 }
 
 type cache struct {
@@ -28,7 +28,8 @@ func NewCache(client *redis.Client) Cache {
 }
 
 const (
-	keyRefreshToken = "refreshToken"
+	keyRefreshTokenMapDuration = 30 * 24 * time.Hour
+	keyRefreshTokenMap         = "refresh_token_map" //这里使用map只是为了以后方便复用 该项目实际只需要一个string键就可以了
 )
 
 func (ch *cache) GenRefreshToken(payload *model.JwtPayload) (string, error) {
@@ -36,22 +37,22 @@ func (ch *cache) GenRefreshToken(payload *model.JwtPayload) (string, error) {
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
-	key := utils.GetRedisKey(keyRefreshToken)
+	key := utils.GetRedisKey(keyRefreshTokenMap)
 	payloadByte, err := json.Marshal(payload)
-	payloadStr := string(payloadByte)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
+
+	payloadStr := string(payloadByte)
 
 	pipe := ch.client.Pipeline()
 
 	if err := pipe.HSet(context.Background(), key, payloadStr, refreshToken).Err(); err != nil {
 		return "", errors.WithStack(err)
 	}
-	refreshExpireDuration := time.Duration(config.Cfg.Auth.RefreshToken.ExpireDay) * 24 * time.Hour
 
 	// 使用计算出的过期时间
-	pipe.HExpire(context.Background(), key, refreshExpireDuration, payloadStr)
+	pipe.HExpire(context.Background(), key, keyRefreshTokenMapDuration, payloadStr)
 
 	// 执行Pipeline命令
 	_, err = pipe.Exec(context.Background())
@@ -67,9 +68,11 @@ func (ch *cache) ValidateRefreshToken(payload *model.JwtPayload, refreshToken st
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	key := utils.GetRedisKey(keyRefreshToken)
+	key := utils.GetRedisKey(keyRefreshTokenMap)
 
-	result, err := ch.client.HGet(context.Background(), key, string(payloadByte)).Result()
+	payloadStr := string(payloadByte)
+
+	result, err := ch.client.HGet(context.Background(), key, payloadStr).Result()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -78,4 +81,20 @@ func (ch *cache) ValidateRefreshToken(payload *model.JwtPayload, refreshToken st
 		return nil
 	}
 	return errors.New("refreshToken 无效")
+}
+
+func (ch *cache) ResetRefreshTokenExpiry(payload *model.JwtPayload) error {
+	payloadByte, err := json.Marshal(payload)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	key := utils.GetRedisKey(keyRefreshTokenMap)
+
+	payloadStr := string(payloadByte)
+
+	if err := ch.client.HExpire(context.Background(), key, keyRefreshTokenMapDuration, payloadStr).Err(); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }

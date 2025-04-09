@@ -5,7 +5,7 @@ type Config struct {
 	Log    LogConfig      `mapstructure:"log"`
 	DB     DBConfig       `mapstructure:"db"`
 	Redis  RedisConfig    `mapstructure:"redis"`
-	Auth   AuthConfig     `mapstructure:"auth"`
+	JWT    JWTConfig      `mapstructure:"jwt"`
 }
 
 type ServerConfig struct {
@@ -49,12 +49,4 @@ type JWTConfig struct {
 	Issuer       string `mapstructure:"issuer"`
 	Secret       string `mapstructure:"secret"`
 	ExpireMinute uint   `mapstructure:"expire_minute"`
-}
-
-type RefreshTokenConfig struct {
-	ExpireDay uint `mapstructure:"expire_day"`
-}
-type AuthConfig struct {
-	JWT          JWTConfig          `mapstructure:"jwt"`
-	RefreshToken RefreshTokenConfig `mapstructure:"refreshToken"`
 }

@@ -64,7 +64,7 @@ func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
 }
 
 func (s *service) genToken(payload *model.JwtPayload) (token string, err error) {
-	jwtCfg := config.Cfg.Auth.JWT
+	jwtCfg := config.Cfg.JWT
 
 	JWTTokenParams := jwt.JWTTokenParams{
 		Payload:  *payload,
@@ -122,6 +122,10 @@ func (s *service) RefreshToken(payload *model.JwtPayload, refreshToken string) (
 		if errors.Is(err, redis.Nil) {
 			return nil, response.NewAppError(response.CodeRefreshInvalid, errors.WithStack(err))
 		}
+		return nil, response.NewAppError(response.CodeDatabaseError, err)
+	}
+
+	if err := s.cache.ResetRefreshTokenExpiry(payload); err != nil {
 		return nil, response.NewAppError(response.CodeDatabaseError, err)
 	}
 

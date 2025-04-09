@@ -23,5 +23,5 @@ func InitAdminAuth() (Auth, error) {
 
 // provideJWTSecret 提供JWT Secret
 func provideJWTSecret() []byte {
-	return []byte(config.Cfg.Auth.JWT.Secret)
+	return []byte(config.Cfg.JWT.Secret)
 }

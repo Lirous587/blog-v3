@@ -26,7 +26,7 @@ type cache struct {
 }
 
 const (
-	essayVisitedTimesKey     = "essay:visitedTimesMap"
+	essayVisitedTimesKey     = "essay:visited_times_map"
 	essayTimelineKey         = "essay:timeline"
 	essayTimelineKeyDuration = 2 * time.Hour
 )

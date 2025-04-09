@@ -3,6 +3,7 @@ package cmd
 import (
 	"blog/internal/domain/admin"
 	"blog/internal/domain/essay"
+	"blog/internal/domain/friendLink"
 	"blog/internal/domain/label"
 	"blog/internal/domain/maxim"
 	"blog/pkg/httpserver"
@@ -38,6 +39,10 @@ func Main() {
 	}
 
 	if err := maxim.InitV1(api); err != nil {
+		panic(err)
+	}
+
+	if err := friendLink.InitV1(api); err != nil {
 		panic(err)
 	}
 
