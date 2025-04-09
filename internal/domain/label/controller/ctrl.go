@@ -34,7 +34,7 @@ func (c *controller) Create(ctx *gin.Context) {
 	}
 
 	if err := c.server.Create(req); err != nil {
-		response.Error(ctx, response.CodeServerError, err)
+		response.ErrorStrict(ctx, err)
 		return
 	}
 	response.Success(ctx)
@@ -54,7 +54,7 @@ func (c *controller) Update(ctx *gin.Context) {
 	}
 
 	if err := c.server.Update(id, req); err != nil {
-		response.Error(ctx, response.CodeServerError, err)
+		response.ErrorStrict(ctx, err)
 		return
 	}
 

@@ -4,14 +4,15 @@ import (
 	"blog/internal/domain/label/model"
 	"blog/internal/domain/label/repository/cache"
 	"blog/internal/domain/label/repository/db"
+	"blog/pkg/response"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type Service interface {
-	Create(req *model.CreateReq) error
-	Update(id uint, req *model.UpdateReq) error
+	Create(req *model.CreateReq) *response.AppError
+	Update(id uint, req *model.UpdateReq) *response.AppError
 	Delete(id uint) error
 	List(req *model.ListReq) (res *model.ListRes, err error)
 	FindByIDs(ids []uint) ([]model.Label, error)
@@ -30,45 +31,49 @@ func NewService(db db.DB, cache cache.Cache) Service {
 	}
 }
 
-func (s *service) Create(req *model.CreateReq) (err error) {
+func (s *service) Create(req *model.CreateReq) *response.AppError {
 	// 先查是否有同名的记录
 	label, err := s.db.FindByName(req.Name)
 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errors.WithStack(err)
+		return response.NewAppError(response.CodeDatabaseError, err)
 	}
 
 	if label.Name == req.Name {
-		return errors.New("label名重复")
+		return response.NewAppError(response.CodeLabelNameDuplicate, err)
 	}
 
 	if err = s.db.Create(req); err != nil {
-		return errors.WithStack(err)
+		return response.NewAppError(response.CodeDatabaseError, err)
 	}
 
-	return
+	return nil
 }
 
-func (s *service) Update(id uint, req *model.UpdateReq) (err error) {
+func (s *service) Update(id uint, req *model.UpdateReq) *response.AppError {
 	// 除开当前id外 不得有同名的label
-	_, err = s.db.FindByID(id)
+	_, err := s.db.FindByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("标签不存在")
+			return response.NewAppError(response.CodeLabelNotFound, errors.New("标签不存在"))
 		}
-		return errors.WithStack(err)
+		return response.NewAppError(response.CodeDatabaseError, err)
 	}
 
 	// 检查名称唯一性
 	exists, err := s.db.IsNameTakenByOthers(req.Name, id)
 	if err != nil {
-		return errors.WithStack(err)
+		return response.NewAppError(response.CodeDatabaseError, err)
 	}
 	if exists {
-		return errors.New("存在重复的label记录")
+		return response.NewAppError(response.CodeLabelNameDuplicate, errors.New("存在重复的label记录"))
 	}
 
-	return errors.WithStack(s.db.Update(id, req))
+	if err := s.db.Update(id, req); err != nil {
+		return response.NewAppError(response.CodeDatabaseError, errors.New("存在重复的label记录"))
+	}
+
+	return nil
 }
 
 func (s *service) Delete(id uint) (err error) {
