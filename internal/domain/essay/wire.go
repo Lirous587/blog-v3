@@ -5,8 +5,8 @@ package essay
 
 import (
 	"blog/internal/domain/essay/controller"
-	essayCache "blog/internal/domain/essay/repository/cache"
-	labelDB "blog/internal/domain/essay/repository/db"
+	essayCache "blog/internal/domain/essay/infrastructure/cache"
+	labelDB "blog/internal/domain/essay/infrastructure/db"
 	"blog/internal/domain/essay/router"
 	"blog/internal/domain/essay/service"
 	"blog/internal/domain/essay/worker"

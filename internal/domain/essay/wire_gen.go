@@ -8,8 +8,8 @@ package essay
 
 import (
 	"blog/internal/domain/essay/controller"
-	"blog/internal/domain/essay/repository/cache"
-	"blog/internal/domain/essay/repository/db"
+	"blog/internal/domain/essay/infrastructure/cache"
+	"blog/internal/domain/essay/infrastructure/db"
 	"blog/internal/domain/essay/router"
 	service2 "blog/internal/domain/essay/service"
 	"blog/internal/domain/essay/worker"

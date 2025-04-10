@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"blog/internal/domain/essay/repository/cache"
-	"blog/internal/domain/essay/repository/db"
+	"blog/internal/domain/essay/infrastructure/cache"
+	"blog/internal/domain/essay/infrastructure/db"
 	"go.uber.org/zap"
 	"time"
 )

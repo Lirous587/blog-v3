@@ -8,8 +8,8 @@ package maxim
 
 import (
 	"blog/internal/domain/maxim/controller"
-	"blog/internal/domain/maxim/repository/cache"
-	"blog/internal/domain/maxim/repository/db"
+	"blog/internal/domain/maxim/infrastructure/cache"
+	"blog/internal/domain/maxim/infrastructure/db"
 	"blog/internal/domain/maxim/router"
 	"blog/internal/domain/maxim/service"
 	"blog/pkg/repository"

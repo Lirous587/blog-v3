@@ -8,8 +8,8 @@ package admin
 
 import (
 	"blog/internal/domain/admin/controller"
-	"blog/internal/domain/admin/repository/cache"
-	"blog/internal/domain/admin/repository/db"
+	"blog/internal/domain/admin/infrastructure/cache"
+	"blog/internal/domain/admin/infrastructure/db"
 	"blog/internal/domain/admin/router"
 	"blog/internal/domain/admin/service"
 	"blog/pkg/repository"

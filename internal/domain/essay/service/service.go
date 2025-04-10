@@ -1,9 +1,9 @@
 package service
 
 import (
+	"blog/internal/domain/essay/infrastructure/cache"
+	"blog/internal/domain/essay/infrastructure/db"
 	"blog/internal/domain/essay/model"
-	"blog/internal/domain/essay/repository/cache"
-	"blog/internal/domain/essay/repository/db"
 	model2 "blog/internal/domain/label/model"
 	labelService "blog/internal/domain/label/service"
 	"github.com/pkg/errors"

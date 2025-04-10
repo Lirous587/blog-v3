@@ -1,9 +1,9 @@
 package service
 
 import (
+	"blog/internal/domain/admin/infrastructure/cache"
+	"blog/internal/domain/admin/infrastructure/db"
 	"blog/internal/domain/admin/model"
-	"blog/internal/domain/admin/repository/cache"
-	"blog/internal/domain/admin/repository/db"
 	"blog/pkg/config"
 	"blog/pkg/jwt"
 	"blog/pkg/response"
