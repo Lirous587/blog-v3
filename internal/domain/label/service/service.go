@@ -36,7 +36,7 @@ func (s *service) Create(req *model.CreateReq) *response.AppError {
 	label, err := s.db.FindByName(req.Name)
 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return response.NewAppError(response.CodeDatabaseError, err)
+		return response.NewAppError(response.CodeServerError, err)
 	}
 
 	if label.Name == req.Name {
@@ -44,7 +44,7 @@ func (s *service) Create(req *model.CreateReq) *response.AppError {
 	}
 
 	if err = s.db.Create(req); err != nil {
-		return response.NewAppError(response.CodeDatabaseError, err)
+		return response.NewAppError(response.CodeServerError, err)
 	}
 
 	return nil
@@ -57,20 +57,20 @@ func (s *service) Update(id uint, req *model.UpdateReq) *response.AppError {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return response.NewAppError(response.CodeLabelNotFound, errors.New("标签不存在"))
 		}
-		return response.NewAppError(response.CodeDatabaseError, err)
+		return response.NewAppError(response.CodeServerError, err)
 	}
 
 	// 检查名称唯一性
 	exists, err := s.db.IsNameTakenByOthers(req.Name, id)
 	if err != nil {
-		return response.NewAppError(response.CodeDatabaseError, err)
+		return response.NewAppError(response.CodeServerError, err)
 	}
 	if exists {
 		return response.NewAppError(response.CodeLabelNameDuplicate, errors.New("存在重复的label记录"))
 	}
 
 	if err := s.db.Update(id, req); err != nil {
-		return response.NewAppError(response.CodeDatabaseError, errors.New("存在重复的label记录"))
+		return response.NewAppError(response.CodeServerError, errors.New("存在重复的label记录"))
 	}
 
 	return nil

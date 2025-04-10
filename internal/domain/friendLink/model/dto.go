@@ -1,6 +1,6 @@
 package model
 
-type MaximDTO struct {
+type FriendLinkDTO struct {
 	ID           uint   `json:"id"`
 	Introduction string `json:"introduction"`
 	SiteName     string `json:"siteName"`
@@ -9,8 +9,8 @@ type MaximDTO struct {
 	Status       Status `json:"status"`
 }
 
-func (fl *FriendLink) ConvertToDTO() *MaximDTO {
-	return &MaximDTO{
+func (fl *FriendLink) ConvertToDTO() *FriendLinkDTO {
+	return &FriendLinkDTO{
 		ID:           fl.ID,
 		Introduction: fl.Introduction,
 		SiteName:     fl.SiteName,

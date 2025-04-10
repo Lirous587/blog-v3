@@ -3,7 +3,6 @@ package worker
 import (
 	"blog/internal/domain/essay/repository/cache"
 	"blog/internal/domain/essay/repository/db"
-	"fmt"
 	"go.uber.org/zap"
 	"time"
 )
@@ -36,8 +35,8 @@ func (w *worker) Start() {
 	go func() {
 		// 启动后立即执行一次同步
 		if err := w.syncVisitedTimes(); err != nil {
-			fmt.Printf("%+v", err)
-			//zap.L().Error("同步访问次数失败: %v", zap.Error(err))
+			sugar := zap.L().Sugar()
+			sugar.Errorf("同步访问次数失败: %+v", err)
 		}
 
 		for {

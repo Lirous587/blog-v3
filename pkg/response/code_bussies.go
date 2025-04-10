@@ -10,7 +10,7 @@ const (
 
 // label模块错误 100100-100199
 const (
-	CodeLabelNotFound      code = 100100 + iota
+	CodeLabelNotFound      code = 10100 + iota
 	CodeLabelNameDuplicate      // 标签name重复
 )
 

@@ -15,7 +15,9 @@ type DB interface {
 	List(res *model.ListReq) (*model.ListRes, error)
 	FindByID(id uint) (*model.FriendLink, error)
 	FindByURL(url string) (*model.FriendLink, error)
-	GetPublicRandom20() ([]model.MaximDTO, error)
+	GetPublishedRandom20() ([]model.FriendLinkDTO, error)
+	Apply(req *model.ApplyReq) error
+	GetPendingLinks() ([]model.FriendLink, error)
 }
 
 type db struct {
@@ -45,7 +47,7 @@ func (db *db) Update(id uint, req *model.UpdateReq) error {
 		SiteName:     req.SiteName,
 		Url:          req.Url,
 		Logo:         req.Logo,
-		Status:       req.Status,
+		Status:       model.StatusPending,
 		Email:        req.Email,
 	}
 	return db.orm.Where("id = ?", id).Updates(&friendLink).Error
@@ -59,7 +61,7 @@ func (db *db) UpdateStatus(id uint, req *model.UpdateStatusReq) error {
 }
 
 func (db *db) Delete(id uint) error {
-	return db.orm.Delete(&model.FriendLink{}, id).Error
+	return db.orm.Unscoped().Delete(&model.FriendLink{}, id).Error
 }
 
 func (db *db) List(req *model.ListReq) (*model.ListRes, error) {
@@ -75,19 +77,19 @@ func (db *db) List(req *model.ListReq) (*model.ListRes, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	maxims := make([]model.FriendLink, 0, req.PageSize)
+	friendLinks := make([]model.FriendLink, 0, req.PageSize)
 
 	offset, err := utils.ComputeOffset(req.Page, req.PageSize)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	if err := db.orm.Limit(req.PageSize).Offset(offset).Where("status = ? AND site_name LIKE ?", model.StatusPublished, keyword).Find(&maxims).Error; err != nil {
+	if err := db.orm.Limit(req.PageSize).Offset(offset).Where("status = ? AND site_name LIKE ?", model.StatusPublished, keyword).Find(&friendLinks).Error; err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	dtos := make([]model.MaximDTO, len(maxims))
-	for i, friendLink := range maxims {
+	dtos := make([]model.FriendLinkDTO, len(friendLinks))
+	for i, friendLink := range friendLinks {
 		dtos[i] = *friendLink.ConvertToDTO()
 	}
 
@@ -102,6 +104,9 @@ func (db *db) List(req *model.ListReq) (*model.ListRes, error) {
 func (db *db) FindByID(id uint) (*model.FriendLink, error) {
 	var friendLink model.FriendLink
 	if err := db.orm.First(&friendLink, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, errors.WithStack(err)
 	}
 	return &friendLink, nil
@@ -110,23 +115,47 @@ func (db *db) FindByID(id uint) (*model.FriendLink, error) {
 func (db *db) FindByURL(url string) (*model.FriendLink, error) {
 	var friendLink model.FriendLink
 	if err := db.orm.Where("url = ?", url).First(&friendLink).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, errors.WithStack(err)
 	}
 	return &friendLink, nil
 }
 
-func (db *db) GetPublicRandom20() ([]model.MaximDTO, error) {
+func (db *db) GetPublishedRandom20() ([]model.FriendLinkDTO, error) {
 	var maxims []model.FriendLink
 	randomFunc := utils.ResolveDBRandomFunc(db.orm)
 
 	if err := db.orm.Where("status = ?", model.StatusPublished).Order(randomFunc).Find(&maxims).Limit(20).Error; err != nil {
 		return nil, errors.WithStack(err)
 	}
-	dtos := make([]model.MaximDTO, len(maxims))
+	dtos := make([]model.FriendLinkDTO, len(maxims))
 
 	for i := range maxims {
 		dtos[i] = *maxims[i].ConvertToDTO()
 	}
 
 	return dtos, nil
+}
+
+func (db *db) Apply(req *model.ApplyReq) error {
+	friendLink := model.FriendLink{
+		Introduction: req.Introduction,
+		SiteName:     req.SiteName,
+		Url:          req.Url,
+		Logo:         req.Logo,
+		Email:        req.Email,
+	}
+	return db.orm.Create(&friendLink).Error
+}
+
+func (db *db) GetPendingLinks() ([]model.FriendLink, error) {
+	var list []model.FriendLink
+
+	if err := db.orm.Where("status = ?", model.StatusPending).Find(&list).Error; err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return list, nil
 }

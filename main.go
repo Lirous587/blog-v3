@@ -3,6 +3,7 @@ package main
 import (
 	"blog/internal/cmd"
 	"blog/pkg/config"
+	"blog/pkg/email"
 	"blog/pkg/logger"
 	"blog/pkg/repository"
 	"blog/pkg/validator"
@@ -32,6 +33,10 @@ func setting() error {
 
 	if err = repository.GormInit(&config.Cfg.DB); err != nil {
 		return errors.WithMessage(err, "db模块初始化失败")
+	}
+
+	if err = email.Init(&config.Cfg.Email); err != nil {
+		return errors.WithMessage(err, "email模块初始化失败")
 	}
 
 	return nil

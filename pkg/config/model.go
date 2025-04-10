@@ -6,6 +6,7 @@ type Config struct {
 	DB     DBConfig       `mapstructure:"db"`
 	Redis  RedisConfig    `mapstructure:"redis"`
 	JWT    JWTConfig      `mapstructure:"jwt"`
+	Email  EmailConfig    `mapstructure:"email"`
 }
 
 type ServerConfig struct {
@@ -49,4 +50,14 @@ type JWTConfig struct {
 	Issuer       string `mapstructure:"issuer"`
 	Secret       string `mapstructure:"secret"`
 	ExpireMinute uint   `mapstructure:"expire_minute"`
+}
+
+type EmailConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+	FromName string `mapstructure:"fromName"`
+	CC       string `mapstructure:"cc"`
 }

@@ -38,7 +38,7 @@ func (s *service) IfInit() (bool, error) {
 func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
 	have, err := s.IfInit()
 	if err != nil {
-		return response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
+		return response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
 	if have {
@@ -57,7 +57,7 @@ func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
 	}
 
 	if err = s.db.Create(newAdmin); err != nil {
-		return response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
+		return response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
 	return
@@ -82,7 +82,7 @@ func (s *service) genToken(payload *model.JwtPayload) (token string, err error) 
 func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *response.AppError) {
 	admin, err := s.db.FindByEmail(email)
 	if err != nil {
-		return nil, response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
+		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
 	if admin == nil {
@@ -105,7 +105,7 @@ func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *res
 
 	refreshToken, err := s.cache.GenRefreshToken(payload)
 	if err != nil {
-		return nil, response.NewAppError(response.CodeDatabaseError, errors.WithStack(err))
+		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
 	}
 
 	res = &model.LoginRes{
@@ -122,11 +122,11 @@ func (s *service) RefreshToken(payload *model.JwtPayload, refreshToken string) (
 		if errors.Is(err, redis.Nil) {
 			return nil, response.NewAppError(response.CodeRefreshInvalid, errors.WithStack(err))
 		}
-		return nil, response.NewAppError(response.CodeDatabaseError, err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	if err := s.cache.ResetRefreshTokenExpiry(payload); err != nil {
-		return nil, response.NewAppError(response.CodeDatabaseError, err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	newToken, err := s.genToken(payload)

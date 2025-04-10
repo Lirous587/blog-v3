@@ -46,12 +46,15 @@ type UpdateReq struct {
 	SiteName     string `json:"site_name" binding:"required,max=80"`
 	Url          string `json:"url" binding:"required,domain_url,max=120"`
 	Logo         string `json:"logo" binding:"required,url,max=120"`
-	Status       Status `json:"status" binding:"oneof=published pending"`
 	Email        string `json:"email" binding:"required,email,max=80"`
 }
 
 type UpdateStatusReq struct {
 	Status Status `json:"status" binding:"oneof=published pending"`
+}
+
+type DeleteReq struct {
+	Reason string `json:"reason" binding:"required"`
 }
 
 type ListReq struct {
@@ -61,9 +64,14 @@ type ListReq struct {
 }
 
 type ListRes struct {
-	List  []MaximDTO `json:"list"`
-	Pages int        `json:"pages"`
+	List  []FriendLinkDTO `json:"list"`
+	Pages int             `json:"pages"`
 }
 
 type ApplyReq struct {
+	Introduction string `json:"introduction" binding:"required,max=80"`
+	SiteName     string `json:"site_name" binding:"required,max=80"`
+	Url          string `json:"url" binding:"required,domain_url,max=120"`
+	Logo         string `json:"logo" binding:"required,url,max=120"`
+	Email        string `json:"email" binding:"required,email,max=80"`
 }

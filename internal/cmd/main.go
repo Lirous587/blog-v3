@@ -45,6 +45,13 @@ func Main() {
 	if err := friendLink.InitV1(api); err != nil {
 		panic(err)
 	}
+	{
+		friendLinkWorker := friendLink.InitWorker()
+		friendLinkWorker.Start()
+		s.RegisterStopHandler(func() {
+			friendLinkWorker.Stop()
+		})
+	}
 
 	s.Run()
 }

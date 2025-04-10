@@ -36,3 +36,12 @@ jwt:
   issuer: "lirous"
   secret: "https://lirous.com"
   expire_minute: 120
+
+email:
+  host: "smtp.qq.com"
+  port: 465
+  username: "1756835311@qq.com"
+  password: "reqlebtkbehseiea"
+  from: "1756835311@qq.com"
+  fromName: "Lirous的日记本"
+  cc: "lirous@88.com"

@@ -8,10 +8,13 @@ package friendLink
 
 import (
 	"blog/internal/domain/friendLink/controller"
-	"blog/internal/domain/friendLink/repository/cache"
-	"blog/internal/domain/friendLink/repository/db"
+	"blog/internal/domain/friendLink/infrastructure/cache"
+	"blog/internal/domain/friendLink/infrastructure/db"
+	"blog/internal/domain/friendLink/infrastructure/notifier"
 	"blog/internal/domain/friendLink/router"
 	"blog/internal/domain/friendLink/service"
+	"blog/internal/domain/friendLink/worker"
+	"blog/pkg/email"
 	"blog/pkg/repository"
 	"github.com/gin-gonic/gin"
 )
@@ -23,8 +26,19 @@ func InitV1(r *gin.RouterGroup) error {
 	dbDB := db.NewDB(gormDB)
 	client := repository.RedisClient()
 	cacheCache := cache.NewCache(client)
-	serviceService := service.NewService(dbDB, cacheCache)
+	mailer := email.GetMailer()
+	notifierNotifier := notifier.NewMailer(mailer)
+	serviceService := service.NewService(dbDB, cacheCache, notifierNotifier)
 	controllerController := controller.NewController(serviceService)
 	error2 := router.RegisterV1(r, controllerController)
 	return error2
+}
+
+func InitWorker() worker.Worker {
+	gormDB := repository.GormDB()
+	dbDB := db.NewDB(gormDB)
+	mailer := email.GetMailer()
+	notifierNotifier := notifier.NewMailer(mailer)
+	workerWorker := worker.NewWorker(dbDB, notifierNotifier)
+	return workerWorker
 }

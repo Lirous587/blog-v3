@@ -12,10 +12,11 @@ type Controller interface {
 	Create(ctx *gin.Context)
 	Delete(ctx *gin.Context)
 	Update(ctx *gin.Context)
-	UpdateStatus(ctx *gin.Context)
 	List(ctx *gin.Context)
-	GetPublicRandom20(ctx *gin.Context)
+	GetPublishedRandom20(ctx *gin.Context)
 	Apply(ctx *gin.Context)
+	Approve(ctx *gin.Context)
+	Reject(ctx *gin.Context)
 }
 
 type controller struct {
@@ -56,28 +57,7 @@ func (c *controller) Update(ctx *gin.Context) {
 	}
 
 	if err := c.server.Update(id, req); err != nil {
-		response.Error(ctx, response.CodeServerError, err)
-		return
-	}
-
-	response.Success(ctx)
-}
-
-func (c *controller) UpdateStatus(ctx *gin.Context) {
-	id, err := utils.GetID(ctx)
-	if err != nil {
-		response.Error(ctx, response.CodeParamInvalid, err)
-		return
-	}
-
-	req := new(model.UpdateStatusReq)
-	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.Error(ctx, response.CodeParamInvalid, err)
-		return
-	}
-
-	if err := c.server.UpdateStatus(id, req); err != nil {
-		response.Error(ctx, response.CodeServerError, err)
+		response.ErrorStrict(ctx, err)
 		return
 	}
 
@@ -91,8 +71,14 @@ func (c *controller) Delete(ctx *gin.Context) {
 		return
 	}
 
-	if err = c.server.Delete(id); err != nil {
-		response.Error(ctx, response.CodeServerError, err)
+	req := new(model.DeleteReq)
+	if err = ctx.ShouldBindJSON(req); err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+
+	if err := c.server.Delete(id, req); err != nil {
+		response.ErrorStrict(ctx, err)
 		return
 	}
 	response.Success(ctx)
@@ -115,8 +101,8 @@ func (c *controller) List(ctx *gin.Context) {
 	response.Success(ctx, res)
 }
 
-func (c *controller) GetPublicRandom20(ctx *gin.Context) {
-	list, err := c.server.GetPublicRandom20()
+func (c *controller) GetPublishedRandom20(ctx *gin.Context) {
+	list, err := c.server.GetPublishedRandom20()
 	if err != nil {
 		response.Error(ctx, response.CodeServerError, err)
 		return
@@ -125,6 +111,42 @@ func (c *controller) GetPublicRandom20(ctx *gin.Context) {
 }
 
 func (c *controller) Apply(ctx *gin.Context) {
-	//TODO implement me
-	panic("implement me")
+	req := new(model.ApplyReq)
+	if err := ctx.ShouldBindJSON(req); err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+
+	if err := c.server.Apply(req); err != nil {
+		response.ErrorStrict(ctx, err)
+		return
+	}
+
+	response.Success(ctx)
+}
+
+func (c *controller) Approve(ctx *gin.Context) {
+	id, err := utils.GetID(ctx)
+	if err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+	if err := c.server.Approve(id); err != nil {
+		response.ErrorStrict(ctx, err)
+		return
+	}
+	response.Success(ctx)
+}
+
+func (c *controller) Reject(ctx *gin.Context) {
+	id, err := utils.GetID(ctx)
+	if err != nil {
+		response.Error(ctx, response.CodeParamInvalid, err)
+		return
+	}
+	if err := c.server.Reject(id); err != nil {
+		response.ErrorStrict(ctx, err)
+		return
+	}
+	response.Success(ctx)
 }

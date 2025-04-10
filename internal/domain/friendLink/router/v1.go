@@ -19,14 +19,16 @@ func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 	{
 		adminGroup.POST("/", ctrl.Create)
 		adminGroup.PUT("/:id", ctrl.Update)
-		adminGroup.PATCH("/:id/status", ctrl.UpdateStatus)
 		adminGroup.DELETE("/:id", ctrl.Delete)
 		adminGroup.GET("/list", ctrl.List)
+
+		adminGroup.PATCH("/:id/approve", ctrl.Approve)
+		adminGroup.DELETE("/:id/reject", ctrl.Reject)
 	}
 
 	publicGroup := r.Group("/v1/friend_link")
 	{
-		publicGroup.GET("/public/random20", ctrl.GetPublicRandom20)
+		publicGroup.GET("/published/random20", ctrl.GetPublishedRandom20)
 		publicGroup.POST("/apply", ctrl.Apply)
 	}
 	return nil
