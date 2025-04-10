@@ -5,6 +5,7 @@ import (
 	"blog/internal/domain/admin/service"
 	"blog/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 type Controller interface {
@@ -27,11 +28,11 @@ func NewController(service service.Service) Controller {
 func (c *controller) IfInit(ctx *gin.Context) {
 	have, err := c.server.IfInit()
 	if err != nil {
-		response.Error(ctx, response.CodeServerError, err)
+		response.Error(ctx, err)
 		return
 	}
 	if have {
-		response.Error(ctx, response.CodeAdminExist, nil)
+		err = response.NewAppError(response.CodeAdminExist, errors.New("用户已经初始化"))
 		return
 	}
 
@@ -41,12 +42,12 @@ func (c *controller) IfInit(ctx *gin.Context) {
 func (c *controller) Init(ctx *gin.Context) {
 	req := new(model.InitReq)
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.Error(ctx, response.CodeParamInvalid, err)
+		response.ErrorParameterInvalid(ctx, err)
 		return
 	}
 	appErr := c.server.Init(req)
 	if appErr != nil {
-		response.ErrorStrict(ctx, appErr)
+		response.Error(ctx, appErr)
 		return
 	}
 	response.Success(ctx)
@@ -55,13 +56,13 @@ func (c *controller) Init(ctx *gin.Context) {
 func (c *controller) Login(ctx *gin.Context) {
 	req := new(model.LoginReq)
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.Error(ctx, response.CodeParamInvalid, err)
+		response.ErrorParameterInvalid(ctx, err)
 		return
 	}
 
 	res, appErr := c.server.Auth(req.Email, req.Password)
 	if appErr != nil {
-		response.ErrorStrict(ctx, appErr)
+		response.Error(ctx, appErr)
 		return
 	}
 
@@ -71,19 +72,20 @@ func (c *controller) Login(ctx *gin.Context) {
 func (c *controller) RefreshToken(ctx *gin.Context) {
 	refreshToken := ctx.GetHeader("refresh-token")
 	if refreshToken == "" {
-		response.Error(ctx, response.CodeAuthFailed, nil)
+		appError := response.NewAppError(response.CodeAuthFailed, errors.New("refresh-token请求头为空"))
+		response.Error(ctx, appError)
 		return
 	}
 
 	req := new(model.RefreshTokenReq)
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		response.Error(ctx, response.CodeParamInvalid, err)
+		response.ErrorParameterInvalid(ctx, err)
 		return
 	}
 
 	res, appErr := c.server.RefreshToken(req, refreshToken)
 	if appErr != nil {
-		response.ErrorStrict(ctx, appErr)
+		response.Error(ctx, appErr)
 		return
 	}
 

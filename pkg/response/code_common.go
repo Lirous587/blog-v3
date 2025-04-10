@@ -4,7 +4,7 @@ type code int
 
 const (
 	codeSuccess          code = 2000
-	CodeParamInvalid     code = 4000
+	codeParamInvalid     code = 4000
 	CodeServerError      code = 5000
 	CodeIllegalOperation code = 5001
 	codeUnKnowError      code = 9999

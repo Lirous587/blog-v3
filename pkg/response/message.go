@@ -2,8 +2,6 @@ package response
 
 var (
 	errCodeMsgMap = map[code]string{
-		// 参数错误
-		CodeParamInvalid: "参数无效",
 
 		// 服务端错误消息映射
 		CodeServerError:      "服务器错误",

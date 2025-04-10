@@ -4,16 +4,17 @@ import (
 	"blog/internal/domain/maxim/infrastructure/cache"
 	"blog/internal/domain/maxim/infrastructure/db"
 	"blog/internal/domain/maxim/model"
+	"blog/pkg/response"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 )
 
 type Service interface {
-	Create(req *model.CreateReq) error
-	Update(id uint, req *model.UpdateReq) error
-	Delete(id uint) error
-	List(req *model.ListReq) (res *model.ListRes, err error)
-	GetRandom20() ([]model.MaximDTO, error)
+	Create(req *model.CreateReq) *response.AppError
+	Update(id uint, req *model.UpdateReq) *response.AppError
+	Delete(id uint) *response.AppError
+	List(req *model.ListReq) (*model.ListRes, *response.AppError)
+	GetRandom20() ([]model.MaximDTO, *response.AppError)
 }
 
 type service struct {
@@ -28,41 +29,55 @@ func NewService(db db.DB, cache cache.Cache) Service {
 	}
 }
 
-func (s *service) Create(req *model.CreateReq) (err error) {
-	return errors.WithStack(s.db.Create(req))
-}
-
-func (s *service) Update(id uint, req *model.UpdateReq) (err error) {
-	return errors.WithStack(s.db.Update(id, req))
-}
-
-func (s *service) Delete(id uint) (err error) {
-	_, err = s.db.FindByID(id)
-	if err != nil {
-		return errors.WithStack(err)
+func (s *service) Create(req *model.CreateReq) *response.AppError {
+	if err := s.db.Create(req); err != nil {
+		return response.NewAppError(response.CodeServerError, err)
 	}
-	return errors.WithStack(s.db.Delete(id))
+
+	return nil
 }
 
-func (s *service) List(req *model.ListReq) (res *model.ListRes, err error) {
-	res, err = s.db.List(req)
-	return res, errors.WithStack(err)
+func (s *service) Update(id uint, req *model.UpdateReq) *response.AppError {
+	if err := s.db.Update(id, req); err != nil {
+		return response.NewAppError(response.CodeServerError, err)
+	}
+
+	return nil
 }
 
-func (s *service) GetRandom20() ([]model.MaximDTO, error) {
+func (s *service) Delete(id uint) *response.AppError {
+	_, err := s.db.FindByID(id)
+	if err != nil {
+		return response.NewAppError(response.CodeServerError, err)
+	}
+	if err := s.db.Delete(id); err != nil {
+		return response.NewAppError(response.CodeServerError, err)
+	}
+	return nil
+}
+
+func (s *service) List(req *model.ListReq) (*model.ListRes, *response.AppError) {
+	res, err := s.db.List(req)
+	if err != nil {
+		return nil, response.NewAppError(response.CodeServerError, err)
+	}
+	return res, nil
+}
+
+func (s *service) GetRandom20() ([]model.MaximDTO, *response.AppError) {
 	var res []model.MaximDTO
 	var err error
 	if res, err = s.cache.GetRandom20(); err != nil {
 		if errors.Is(err, redis.Nil) {
 			if res, err = s.db.GetRandom20(); err != nil {
-				return nil, errors.WithStack(err)
+				return nil, response.NewAppError(response.CodeServerError, err)
 			}
 			if err = s.cache.SaveRandom20(res); err != nil {
-				return nil, errors.WithStack(err)
+				return nil, response.NewAppError(response.CodeServerError, err)
 			}
-			return res, err
+			return res, nil
 		}
-		return nil, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	return res, nil

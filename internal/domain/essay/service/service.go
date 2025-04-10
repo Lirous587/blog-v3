@@ -6,18 +6,19 @@ import (
 	"blog/internal/domain/essay/model"
 	model2 "blog/internal/domain/label/model"
 	labelService "blog/internal/domain/label/service"
+	"blog/pkg/response"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
 )
 
 type Service interface {
-	Create(req *model.CreateReq) error
-	Update(id uint, req *model.UpdateReq) error
-	Delete(id uint) error
-	Get(id uint) (*model.GetRes, error)
-	List(req *model.ListReq) (*model.ListRes, error)
-	GetTimelines() ([]model.Timeline, error)
+	Create(req *model.CreateReq) *response.AppError
+	Update(id uint, req *model.UpdateReq) *response.AppError
+	Delete(id uint) *response.AppError
+	Get(id uint) (*model.GetRes, *response.AppError)
+	List(req *model.ListReq) (*model.ListRes, *response.AppError)
+	GetTimelines() ([]model.Timeline, *response.AppError)
 }
 
 type service struct {
@@ -30,45 +31,53 @@ func NewService(db db.DB, cache cache.Cache, labelService labelService.Service) 
 	return &service{db: db, cache: cache, labelService: labelService}
 }
 
-func (s *service) findLabelsByIDs(ids []uint) ([]model2.Label, error) {
+func (s *service) findLabelsByIDs(ids []uint) ([]model2.Label, *response.AppError) {
 	labels, err := s.labelService.FindByIDs(ids)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	if len(labels) != len(ids) {
-		return nil, errors.New("无效的输入标签")
+		return nil, response.NewAppError(response.CodeServerError, errors.New("无效的输入标签"))
 	}
 	return labels, nil
 }
 
-func (s *service) Create(req *model.CreateReq) error {
+func (s *service) Create(req *model.CreateReq) *response.AppError {
 	labels, err := s.findLabelsByIDs(req.LabelIDs)
 	if err != nil {
-		return errors.WithStack(err)
+		return response.NewAppError(response.CodeServerError, err)
+	}
+	if err := s.db.Create(req, labels); err != nil {
+		return response.NewAppError(response.CodeServerError, err)
 	}
 
-	return errors.WithStack(s.db.Create(req, labels))
+	return nil
 }
 
-func (s *service) Update(id uint, req *model.UpdateReq) (err error) {
+func (s *service) Update(id uint, req *model.UpdateReq) *response.AppError {
 	labels, err := s.findLabelsByIDs(req.LabelIDs)
 	if err != nil {
-		return errors.WithStack(err)
+		return response.NewAppError(response.CodeServerError, err)
 	}
-
-	return errors.WithStack(s.db.Update(id, req, labels))
+	if err := s.db.Update(id, req, labels); err != nil {
+		return response.NewAppError(response.CodeServerError, err)
+	}
+	return nil
 }
 
-func (s *service) Delete(id uint) (err error) {
-	_, err = s.db.FindByID(id)
+func (s *service) Delete(id uint) *response.AppError {
+	_, err := s.db.FindByID(id)
 	if err != nil {
-		return errors.WithStack(err)
+		return response.NewAppError(response.CodeServerError, err)
 	}
-	return errors.WithStack(s.db.Delete(id))
+	if err := s.db.Delete(id); err != nil {
+		return response.NewAppError(response.CodeServerError, err)
+	}
+	return nil
 }
 
-func (s *service) Get(id uint) (*model.GetRes, error) {
+func (s *service) Get(id uint) (*model.GetRes, *response.AppError) {
 	errGroup := errgroup.Group{}
 
 	var res *model.GetRes
@@ -105,7 +114,7 @@ func (s *service) Get(id uint) (*model.GetRes, error) {
 	})
 
 	if err := errGroup.Wait(); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	res.VisitedTimes = vt
@@ -113,10 +122,10 @@ func (s *service) Get(id uint) (*model.GetRes, error) {
 	return res, nil
 }
 
-func (s *service) List(req *model.ListReq) (*model.ListRes, error) {
+func (s *service) List(req *model.ListReq) (*model.ListRes, *response.AppError) {
 	res, err := s.db.List(req)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	ids := make([]uint, len(res.List))
@@ -126,7 +135,7 @@ func (s *service) List(req *model.ListReq) (*model.ListRes, error) {
 
 	vtMap, err := s.cache.GetNVisitedTimes(ids)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	for i := range res.List {
@@ -140,21 +149,21 @@ func (s *service) List(req *model.ListReq) (*model.ListRes, error) {
 	return res, nil
 }
 
-func (s *service) GetTimelines() ([]model.Timeline, error) {
+func (s *service) GetTimelines() ([]model.Timeline, *response.AppError) {
 	res, err := s.cache.GetTimeline()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			res, err = s.db.GetTimelines()
 			if err != nil {
-				return nil, errors.WithStack(err)
+				return nil, response.NewAppError(response.CodeServerError, err)
 			}
 
 			if err = s.cache.SaveTimeline(res); err != nil {
-				return nil, errors.WithStack(err)
+				return nil, response.NewAppError(response.CodeServerError, err)
 			}
 			return res, nil
 		}
-		return nil, errors.WithStack(err)
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	return res, nil

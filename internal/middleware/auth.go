@@ -49,7 +49,7 @@ func (auth *adminAuth) Validate() gin.HandlerFunc {
 		// 1. 从请求头解析 Token
 		tokenStr, err := parseTokenFromHeader(c)
 		if err != nil {
-			response.Error(c, response.CodeTokenInvalid, err)
+			response.Error(c, response.NewAppError(response.CodeTokenInvalid, err))
 			return
 		}
 
@@ -59,10 +59,10 @@ func (auth *adminAuth) Validate() gin.HandlerFunc {
 		if err != nil {
 			switch {
 			case errors.Is(err, jwt.ErrTokenExpired):
-				response.Error(c, response.CodeTokenExpired, err)
+				response.Error(c, response.NewAppError(response.CodeTokenExpired, err))
 				break
 			default:
-				response.Error(c, response.CodeTokenInvalid, err)
+				response.Error(c, response.NewAppError(response.CodeTokenInvalid, err))
 			}
 
 			return

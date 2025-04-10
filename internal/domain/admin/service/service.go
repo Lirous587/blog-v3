@@ -16,10 +16,10 @@ import (
 )
 
 type Service interface {
-	IfInit() (bool, error)
+	IfInit() (bool, *response.AppError)
 	Init(req *model.InitReq) *response.AppError
-	Auth(email, password string) (res *model.LoginRes, appErr *response.AppError)
-	RefreshToken(payload *model.JwtPayload, refreshToken string) (res *model.RefreshTokenRes, appErr *response.AppError)
+	Auth(email, password string) (*model.LoginRes, *response.AppError)
+	RefreshToken(payload *model.JwtPayload, refreshToken string) (*model.RefreshTokenRes, *response.AppError)
 }
 
 type service struct {
@@ -31,14 +31,18 @@ func NewService(db db.DB, cache cache.Cache) Service {
 	return &service{db: db, cache: cache}
 }
 
-func (s *service) IfInit() (bool, error) {
-	return s.db.HaveOne()
+func (s *service) IfInit() (bool, *response.AppError) {
+	status, err := s.db.HaveOne()
+	if err != nil {
+		return status, response.NewAppError(response.CodeServerError, err)
+	}
+	return status, nil
 }
 
-func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
-	have, err := s.IfInit()
-	if err != nil {
-		return response.NewAppError(response.CodeServerError, errors.WithStack(err))
+func (s *service) Init(req *model.InitReq) *response.AppError {
+	have, appErr := s.IfInit()
+	if appErr != nil {
+		return response.NewAppError(response.CodeServerError, appErr)
 	}
 
 	if have {
@@ -48,7 +52,7 @@ func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
 	hashPassword, err := utils.EncryptPassword(req.Password)
 
 	if err != nil {
-		return response.NewAppError(response.CodeServerError, errors.WithStack(err))
+		return response.NewAppError(response.CodeServerError, err)
 	}
 
 	newAdmin := &model.Admin{
@@ -57,10 +61,10 @@ func (s *service) Init(req *model.InitReq) (appErr *response.AppError) {
 	}
 
 	if err = s.db.Create(newAdmin); err != nil {
-		return response.NewAppError(response.CodeServerError, errors.WithStack(err))
+		return response.NewAppError(response.CodeServerError, err)
 	}
 
-	return
+	return nil
 }
 
 func (s *service) genToken(payload *model.JwtPayload) (token string, err error) {
@@ -79,19 +83,19 @@ func (s *service) genToken(payload *model.JwtPayload) (token string, err error) 
 	return
 }
 
-func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *response.AppError) {
+func (s *service) Auth(email, password string) (*model.LoginRes, *response.AppError) {
 	admin, err := s.db.FindByEmail(email)
 	if err != nil {
-		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	if admin == nil {
-		return nil, response.NewAppError(response.CodeAuthFailed, errors.WithStack(err))
+		return nil, response.NewAppError(response.CodeAuthFailed, err)
 	}
 
 	err = bcrypt.CompareHashAndPassword(admin.HashPassword, []byte(password))
 	if err != nil {
-		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	payload := &model.JwtPayload{
@@ -100,27 +104,27 @@ func (s *service) Auth(email, password string) (res *model.LoginRes, appErr *res
 
 	token, err := s.genToken(payload)
 	if err != nil {
-		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
 	refreshToken, err := s.cache.GenRefreshToken(payload)
 	if err != nil {
-		return nil, response.NewAppError(response.CodeServerError, errors.WithStack(err))
+		return nil, response.NewAppError(response.CodeServerError, err)
 	}
 
-	res = &model.LoginRes{
+	res := &model.LoginRes{
 		Payload:      *payload,
 		Token:        token,
 		RefreshToken: refreshToken,
 	}
 
-	return
+	return res, nil
 }
 
 func (s *service) RefreshToken(payload *model.JwtPayload, refreshToken string) (res *model.RefreshTokenRes, appErr *response.AppError) {
 	if err := s.cache.ValidateRefreshToken(payload, refreshToken); err != nil {
 		if errors.Is(err, redis.Nil) {
-			return nil, response.NewAppError(response.CodeRefreshInvalid, errors.WithStack(err))
+			return nil, response.NewAppError(response.CodeRefreshInvalid, err)
 		}
 		return nil, response.NewAppError(response.CodeServerError, err)
 	}
