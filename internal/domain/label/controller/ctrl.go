@@ -14,6 +14,7 @@ type Controller interface {
 	Update(ctx *gin.Context)
 	List(ctx *gin.Context)
 	GetAllWithEssayCount(ctx *gin.Context)
+	GetAll(ctx *gin.Context)
 }
 
 type controller struct {
@@ -94,6 +95,16 @@ func (c *controller) List(ctx *gin.Context) {
 
 func (c *controller) GetAllWithEssayCount(ctx *gin.Context) {
 	res, err := c.server.GetAllWithEssayCount()
+	if err != nil {
+		response.Error(ctx, err)
+		return
+	}
+
+	response.Success(ctx, res)
+}
+
+func (c *controller) GetAll(ctx *gin.Context) {
+	res, err := c.server.GetAll()
 	if err != nil {
 		response.Error(ctx, err)
 		return

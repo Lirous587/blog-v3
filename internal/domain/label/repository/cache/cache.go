@@ -24,17 +24,17 @@ func NewCache(client *redis.Client) Cache {
 }
 
 const (
-	labelEssayCountsKey         = "label:essay_counts"
-	labelEssayCountsKeyDuration = 2 * time.Hour
+	labelAllWithEssayCountsKey         = "label:all:with_essay_counts"
+	labelAllWithEssayCountsKeyDuration = 2 * time.Hour
 )
 
 func (ch *cache) SaveAllWithEssayCount(list []model.LabelDTO) error {
 	ctx := context.Background()
-	key := utils.GetRedisKey(labelEssayCountsKey)
+	key := utils.GetRedisKey(labelAllWithEssayCountsKey)
 	pipeline := ch.client.Pipeline()
 
 	pipeline.JSONSet(ctx, key, ".", list)
-	pipeline.Expire(ctx, key, labelEssayCountsKeyDuration)
+	pipeline.Expire(ctx, key, labelAllWithEssayCountsKeyDuration)
 
 	if _, err := pipeline.Exec(ctx); err != nil {
 		return errors.WithStack(err)
@@ -44,7 +44,7 @@ func (ch *cache) SaveAllWithEssayCount(list []model.LabelDTO) error {
 
 func (ch *cache) GetAllWithEssayCount() ([]model.LabelDTO, error) {
 	ctx := context.Background()
-	key := utils.GetRedisKey(labelEssayCountsKey)
+	key := utils.GetRedisKey(labelAllWithEssayCountsKey)
 
 	result, err := ch.client.JSONGet(ctx, key, ".").Result()
 	if err != nil {

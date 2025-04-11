@@ -25,11 +25,6 @@ func Success(ctx *gin.Context, data ...any) {
 }
 
 func ErrorParameterInvalid(ctx *gin.Context, err error) {
-	if err == nil {
-		Success(ctx)
-		return
-	}
-
 	res := response{
 		Code:    codeParamInvalid,
 		Message: "参数无效",
@@ -38,34 +33,13 @@ func ErrorParameterInvalid(ctx *gin.Context, err error) {
 	transErr := validator.TranslateError(err, lang)
 	res.Data = transErr.Error()
 
-	ctx.Error(err)
+	if err != nil {
+		ctx.Error(err)
+	}
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
 }
 
-// Error 宽松错误处理 - 接受普通error和错误码
-//func Error(ctx *gin.Context, code code, err error) {
-//	res := response{
-//		Code: code,
-//	}
-//	msg, ok := errCodeMsgMap[code]
-//	if ok {
-//		res.Message = msg
-//	} else {
-//		res.Code = codeUnKnowError
-//		res.Message = "未知错误"
-//	}
-//
-//	if err != nil {
-//		ctx.Error(err)
-//	}
-//	ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
-//}
-
 func Error(ctx *gin.Context, appErr *AppError) {
-	if appErr.Err == nil {
-		Success(ctx)
-		return
-	}
 	res := response{
 		Code: appErr.Code,
 	}
@@ -77,6 +51,9 @@ func Error(ctx *gin.Context, appErr *AppError) {
 		res.Message = "未知错误"
 	}
 
-	ctx.Error(appErr.Err)
+	if appErr.Err != nil {
+		ctx.Error(appErr.Err)
+	}
+
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
 }

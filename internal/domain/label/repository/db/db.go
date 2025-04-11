@@ -11,12 +11,12 @@ type DB interface {
 	FindByName(name string) (*model.Label, error)
 	FindByID(id uint) (*model.Label, error)
 	FindByIDs(ids []uint) ([]model.Label, error)
-	IsNameTakenByOthers(name string, exceptID uint) (bool, error)
 	Create(admin *model.CreateReq) error
 	Update(id uint, req *model.UpdateReq) error
 	Delete(id uint) error
 	List(res *model.ListReq) (*model.ListRes, error)
 	GetAllWithEssayCount() ([]model.LabelDTO, error)
+	GetAll() ([]model.LabelDTO, error)
 }
 
 type db struct {
@@ -32,6 +32,9 @@ func NewDB(orm *gorm.DB) DB {
 func (db *db) FindByName(name string) (*model.Label, error) {
 	label := new(model.Label)
 	if err := db.orm.Where("name = ?", name).First(label).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return label, err
 	}
 	return label, nil
@@ -40,7 +43,9 @@ func (db *db) FindByName(name string) (*model.Label, error) {
 func (db *db) FindByID(id uint) (*model.Label, error) {
 	label := new(model.Label)
 	if err := db.orm.Where("id = ?", id).First(label).Error; err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 	}
 	return label, nil
 }
@@ -54,15 +59,6 @@ func (db *db) FindByIDs(ids []uint) ([]model.Label, error) {
 		return nil, errors.WithStack(err)
 	}
 	return labels, nil
-}
-
-func (db *db) IsNameTakenByOthers(name string, exceptID uint) (bool, error) {
-	var count int64
-	err := db.orm.Model(&model.Label{}).
-		Where("name = ? AND id != ?", name, exceptID).
-		Count(&count).Error
-
-	return count > 0, err
 }
 
 func (db *db) Create(req *model.CreateReq) error {
@@ -82,7 +78,7 @@ func (db *db) Update(id uint, req *model.UpdateReq) error {
 }
 
 func (db *db) Delete(id uint) error {
-	return db.orm.Delete(&model.Label{}, id).Error
+	return db.orm.Unscoped().Delete(&model.Label{}, id).Error
 }
 
 func (db *db) List(req *model.ListReq) (*model.ListRes, error) {
@@ -139,5 +135,19 @@ func (db *db) GetAllWithEssayCount() ([]model.LabelDTO, error) {
 		}
 		dtos[i].EssayCount = uint(count)
 	}
+	return dtos, nil
+}
+
+func (db *db) GetAll() ([]model.LabelDTO, error) {
+	var labels []model.Label
+	if err := db.orm.Find(&labels).Error; err != nil {
+		return nil, errors.WithStack(err)
+	}
+	dtos := make([]model.LabelDTO, len(labels))
+
+	for i := range labels {
+		dtos[i] = *labels[i].ConvertToDTO()
+	}
+
 	return dtos, nil
 }

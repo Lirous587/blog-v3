@@ -88,6 +88,9 @@ func (db *db) List(req *model.ListReq) (*model.ListRes, error) {
 func (db *db) FindByID(id uint) (*model.Maxim, error) {
 	var maxim model.Maxim
 	if err := db.orm.First(&maxim, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, errors.WithStack(err)
 	}
 	return &maxim, nil

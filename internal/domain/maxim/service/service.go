@@ -37,7 +37,22 @@ func (s *service) Create(req *model.CreateReq) *response.AppError {
 	return nil
 }
 
+func (s *service) checkRecordIFExistByID(id uint) (*model.Maxim, *response.AppError) {
+	target, err := s.db.FindByID(id)
+	if err != nil {
+		return nil, response.NewAppError(response.CodeServerError, err)
+	}
+	if target == nil {
+		return nil, response.NewAppError(response.CodeMaximNotFound, err)
+	}
+	return target, nil
+}
+
 func (s *service) Update(id uint, req *model.UpdateReq) *response.AppError {
+	if _, err := s.checkRecordIFExistByID(id); err != nil {
+		return err
+	}
+
 	if err := s.db.Update(id, req); err != nil {
 		return response.NewAppError(response.CodeServerError, err)
 	}
@@ -46,9 +61,8 @@ func (s *service) Update(id uint, req *model.UpdateReq) *response.AppError {
 }
 
 func (s *service) Delete(id uint) *response.AppError {
-	_, err := s.db.FindByID(id)
-	if err != nil {
-		return response.NewAppError(response.CodeServerError, err)
+	if _, err := s.checkRecordIFExistByID(id); err != nil {
+		return err
 	}
 	if err := s.db.Delete(id); err != nil {
 		return response.NewAppError(response.CodeServerError, err)

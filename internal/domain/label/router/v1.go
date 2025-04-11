@@ -15,15 +15,16 @@ func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 
 	authValidate := adminAuth.Validate()
 
-	g := r.Group("/v1/label", authValidate)
+	adminGroup := r.Group("/v1/label", authValidate)
 	{
-		g.POST("/", ctrl.Create)
-		g.PUT("/:id", ctrl.Update)
-		g.DELETE("/:id", ctrl.Delete)
-		g.GET("/list", ctrl.List)
+		adminGroup.POST("/", ctrl.Create)
+		adminGroup.PUT("/:id", ctrl.Update)
+		adminGroup.DELETE("/:id", ctrl.Delete)
+		adminGroup.GET("/list", ctrl.List)
+		adminGroup.GET("/all", ctrl.GetAll)
 	}
-	g2 := r.Group("/v1/label")
-	g2.GET("/all", ctrl.GetAllWithEssayCount)
+	publicGroup := r.Group("/v1/label")
+	publicGroup.GET("/all/with_essay_count", ctrl.GetAllWithEssayCount)
 
 	return nil
 }
