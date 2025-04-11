@@ -40,12 +40,6 @@ type UpdateReq struct {
 	LabelIDs     []uint  `json:"label_ids" binding:"required,unique,min=1,dive,gt=0"`
 }
 
-type GetRes struct {
-	EssayDTO
-	Previous []EssayDTO `json:"previous,omitempty"`
-	Next     []EssayDTO `json:"next,omitempty"`
-}
-
 type ListReq struct {
 	Page     int  `form:"page" binding:"required,min=1"`
 	PageSize int  `form:"page_size" binding:"required,max=15"`

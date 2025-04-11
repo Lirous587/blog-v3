@@ -15,7 +15,7 @@ type EssayDTO struct {
 	CodeTheme    string           `json:"code_theme"`
 	ImgUrl       *string          `json:"img_url"`
 	Labels       []model.LabelDTO `json:"labels"`
-	VisitedTimes uint             `json:"visited_times"`
+	VisitedTimes uint             `json:"visited_times,omitempty"`
 	Priority     uint8            `json:"priority"`
 }
 

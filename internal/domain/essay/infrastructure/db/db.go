@@ -15,7 +15,8 @@ type DB interface {
 	Create(req *model.CreateReq, labels []labelModel.Label) error
 	Update(id uint, req *model.UpdateReq, labels []labelModel.Label) error
 	Delete(id uint) error
-	Get(id uint) (*model.GetRes, error)
+	GetByID(id uint) (*model.EssayDTO, error)
+	GetNearsByID(id uint) ([]model.EssayDTO, error)
 	List(res *model.ListReq) (*model.ListRes, error)
 	FindVTsByIDs(ids []uint) (map[uint]uint, error)
 	SaveVTsByIDs(idVtMap map[uint]uint) error
@@ -33,11 +34,11 @@ func NewDB(orm *gorm.DB) DB {
 }
 
 func (db *db) FindByID(id uint) (*model.Essay, error) {
-	label := new(model.Essay)
-	if err := db.orm.Where("id = ?", id).First(label).Error; err != nil {
+	essay := new(model.Essay)
+	if err := db.orm.Where("id = ?", id).First(essay).Error; err != nil {
 		return nil, err
 	}
-	return label, nil
+	return essay, nil
 }
 
 func (db *db) Create(req *model.CreateReq, labels []labelModel.Label) error {
@@ -86,17 +87,22 @@ func (db *db) Delete(id uint) error {
 	})
 }
 
-func (db *db) Get(id uint) (*model.GetRes, error) {
+func (db *db) GetByID(id uint) (*model.EssayDTO, error) {
 	var essay model.Essay
+
+	if err := db.orm.Preload("Labels").First(&essay, id).Error; err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	res := *essay.ConvertToDTO()
+
+	return &res, nil
+}
+
+func (db *db) GetNearsByID(id uint) ([]model.EssayDTO, error) {
 	var previous []model.Essay
 	var next []model.Essay
-
 	var errGroup errgroup.Group
-
-	// id对应的文章
-	errGroup.Go(func() error {
-		return db.orm.Preload("Labels").First(&essay, id).Error
-	})
 
 	// 前面的文章
 	errGroup.Go(func() error {
@@ -122,23 +128,18 @@ func (db *db) Get(id uint) (*model.GetRes, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	previousDTOs := make([]model.EssayDTO, len(previous))
-	nextDTOs := make([]model.EssayDTO, len(next))
+	// 合并结果
+	result := make([]model.EssayDTO, 0, len(previous)+len(next))
 
 	for i := range previous {
-		previousDTOs[i] = *previous[i].ConvertToDTO()
+		result = append(result, *previous[i].ConvertToDTO())
 	}
 
 	for i := range next {
-		nextDTOs[i] = *next[i].ConvertToDTO()
+		result = append(result, *next[i].ConvertToDTO())
 	}
 
-	res := model.GetRes{
-		EssayDTO: *essay.ConvertToDTO(),
-		Previous: previousDTOs,
-		Next:     nextDTOs,
-	}
-	return &res, errGroup.Wait()
+	return result, nil
 }
 
 func (db *db) FindVTsByIDs(ids []uint) (map[uint]uint, error) {

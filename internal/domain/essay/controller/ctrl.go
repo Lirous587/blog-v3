@@ -11,6 +11,7 @@ import (
 type Controller interface {
 	Create(ctx *gin.Context)
 	Get(ctx *gin.Context)
+	GetNears(ctx *gin.Context)
 	Delete(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	List(ctx *gin.Context)
@@ -82,7 +83,23 @@ func (c *controller) Get(ctx *gin.Context) {
 		response.ErrorParameterInvalid(ctx, err)
 		return
 	}
+
 	res, appErr := c.server.Get(id)
+	if appErr != nil {
+		response.Error(ctx, appErr)
+		return
+	}
+
+	response.Success(ctx, res)
+}
+
+func (c *controller) GetNears(ctx *gin.Context) {
+	id, err := utils.GetID(ctx)
+	if err != nil {
+		response.ErrorParameterInvalid(ctx, err)
+		return
+	}
+	res, appErr := c.server.GetNears(id)
 	if appErr != nil {
 		response.Error(ctx, appErr)
 		return

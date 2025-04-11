@@ -21,6 +21,7 @@ func RegisterV1(r *gin.RouterGroup, ctrl controller.Controller) error {
 		g.PUT("/:id", authValidate, ctrl.Update)
 		g.DELETE("/:id", authValidate, ctrl.Delete)
 		g.GET("/:id", ctrl.Get)
+		g.GET("/:id/nears", ctrl.GetNears)
 		g.GET("/list", ctrl.List)
 		g.GET("/timeline", ctrl.GetTimelines)
 	}

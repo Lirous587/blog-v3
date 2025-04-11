@@ -16,7 +16,8 @@ type Service interface {
 	Create(req *model.CreateReq) *response.AppError
 	Update(id uint, req *model.UpdateReq) *response.AppError
 	Delete(id uint) *response.AppError
-	Get(id uint) (*model.GetRes, *response.AppError)
+	Get(id uint) (*model.EssayDTO, *response.AppError)
+	GetNears(id uint) ([]model.EssayDTO, *response.AppError)
 	List(req *model.ListReq) (*model.ListRes, *response.AppError)
 	GetTimelines() ([]model.Timeline, *response.AppError)
 }
@@ -77,10 +78,10 @@ func (s *service) Delete(id uint) *response.AppError {
 	return nil
 }
 
-func (s *service) Get(id uint) (*model.GetRes, *response.AppError) {
+func (s *service) Get(id uint) (*model.EssayDTO, *response.AppError) {
 	errGroup := errgroup.Group{}
 
-	var res *model.GetRes
+	var res *model.EssayDTO
 	var vt uint
 
 	// 从redis里面去添加vt并且返回
@@ -106,7 +107,7 @@ func (s *service) Get(id uint) (*model.GetRes, *response.AppError) {
 	// 去db查数据
 	errGroup.Go(func() error {
 		var err error
-		res, err = s.db.Get(id)
+		res, err = s.db.GetByID(id)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -119,6 +120,14 @@ func (s *service) Get(id uint) (*model.GetRes, *response.AppError) {
 
 	res.VisitedTimes = vt
 
+	return res, nil
+}
+
+func (s *service) GetNears(id uint) ([]model.EssayDTO, *response.AppError) {
+	res, err := s.db.GetNearsByID(id)
+	if err != nil {
+		return nil, response.NewAppError(response.CodeServerError, err)
+	}
 	return res, nil
 }
 
